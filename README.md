@@ -17,6 +17,10 @@ contra los lugares donde la industria ya dijo que hay arena buena o mala.
 El mapa interactivo, para recorrer los blancos, los depósitos conocidos, las
 rutas y las áreas donde se bombea: <https://dpinero14.github.io/arena-lab/mapa_arena.html>
 
+Y la ruta de la arena animada, año a año desde 2012: los camiones aparecen
+sobre la traza en proporción a la arena bombeada, con el flete del año y los
+dólares por kilómetro: <https://dpinero14.github.io/arena-lab/ruta_animada.html>
+
 ## Qué hace
 
 | Notebook | Qué hace |
@@ -91,6 +95,17 @@ público, lo dice este mapa.
 
 ![La ruta de la arena](docs/figures/ruta_arena.png)
 
+**En camiones y en dólares, año a año.** Con 30 toneladas por viaje, 300 días
+operativos y un ciclo de seis días, la arena nacional de 2025 son 168.000
+viajes cargados, 561 por día y unos 3.400 camiones en circulación, contra los
+4.300 que cuenta la prensa contando los parados. A 70 dólares la tonelada de
+flete, a precios de 2026, son 354 millones de dólares en el año: 242.000
+dólares por cada kilómetro de ruta. Desde 2012, 1.460 millones. Cada viaje
+cargado cuesta 2.100 dólares de flete, 1,44 por kilómetro. Los supuestos están
+en `animation.py` y en la página animada, que además supone toda la arena
+nacional por la ruta de Entre Ríos: hasta 2020 una parte venía de Río Negro y
+Chubut, con viajes más cortos.
+
 ## Cómo se explora arena de fractura, en dos párrafos
 
 La arena que sirve es cuarzosa, redonda y resistente. La norma API 19C pide
@@ -133,6 +148,7 @@ src/alab/
   validate.py    control contra lugares con arena conocida
   demand.py      arena bombeada por área, con coordenadas de pozo
   route.py       la ruta de la arena de Ibicuy a Añelo, por OSRM, con puntos de paso de la prensa
+  animation.py   la ruta animada: camiones por año y flete por kilómetro, con supuestos declarados
   maps.py        mapa interactivo (folium) y figuras
 notebooks/       01_donde_buscar_arena
 tests/           pytest con polígonos sintéticos
