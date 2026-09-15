@@ -146,6 +146,7 @@ input[type=range]{flex:1;accent-color:var(--accent)}
 #end h2{margin:0 0 8px;font-size:22px}#end p{color:var(--muted);font-size:14px;line-height:1.5}
 #end table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}#end td,#end th{padding:5px 6px;border-bottom:1px dashed var(--rule);text-align:right}#end td:first-child,#end th:first-child{text-align:left}
 #end .v{font-family:Consolas,monospace}
+.cmp{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0}.cmp td,.cmp th{padding:4px 5px;border-bottom:1px dashed var(--rule);text-align:right}.cmp td:first-child,.cmp th:first-child{text-align:left}.cmp th{color:var(--muted);font-weight:500}.cmp .v{font-family:Consolas,monospace}
 @media (max-width:760px){#panel{left:8px;right:8px;top:auto;bottom:8px;width:auto;max-height:60%}}
 </style></head><body>
 <div id="map"></div>
@@ -158,12 +159,15 @@ input[type=range]{flex:1;accent-color:var(--accent)}
   <div class="chains" id="chains"></div>
   <div class="estado" id="estado"></div>
   <div class="row"><span class="l">arena nacional bombeada</span><span class="v" id="nat"></span></div>
+  <div id="single">
   <div class="row"><span class="l">unidades en circulación</span><span class="v" id="units"></span></div>
   <div class="row"><span class="l">kilómetros en camión por tonelada</span><span class="v" id="kmcam"></span></div>
   <div class="big"><div class="l">costo de transporte del año, hasta el pozo</div><div class="v" id="costo"></div></div>
   <div class="row"><span class="l">contra el camión directo</span><span class="v" id="ahorro"></span></div>
   <div class="row"><span class="l">emisiones del año</span><span class="v" id="co2"></span></div>
   <div class="row"><span class="l">acumulado 2012 a hoy, esta cadena</span><span class="v" id="acum"></span></div>
+  </div>
+  <table id="cmp" class="cmp" style="display:none"></table>
   <div class="bars" id="bars"></div><div class="bars-lbl"><span id="y0"></span><span>arena nacional por año</span><span id="y1"></span></div>
   <div class="ctl"><button class="play" id="play">Pausa</button><input type="range" id="slider" min="0" max="0" value="0"></div>
   <div class="layers">
@@ -192,33 +196,42 @@ const lyPuertos = L.layerGroup(D.layers.puertos.map(p => L.circleMarker([p.lat, 
 D.waypoints.forEach(w => L.circleMarker([w.lat, w.lon], {radius: 4, color: "#111", weight: 1.2, fillColor: "#fff", fillOpacity: 1}).bindTooltip(`${w.lugar}: ${w.nota}`).addTo(map));
 // trazas por cadena
 const routeLayers = L.layerGroup().addTo(map);
-function drawChain(ci){
-  routeLayers.clearLayers();
-  C[ci].paths.forEach(p => {
+function drawOne(k, thin){
+  C[k].paths.forEach(p => {
     const ll = p.coords.map(c => [c[0], c[1]]);
     const col = U[p.modo].color;
-    L.polyline(ll, {color: "#111", weight: 5, opacity: .9}).addTo(routeLayers);
-    L.polyline(ll, {color: col, weight: 2.5, opacity: 1, dashArray: p.modo === "tren" ? "8 6" : null}).addTo(routeLayers);
+    L.polyline(ll, {color: "#111", weight: thin ? 3.5 : 5, opacity: .9}).addTo(routeLayers);
+    L.polyline(ll, {color: col, weight: thin ? 1.8 : 2.5, opacity: 1, dashArray: p.modo === "tren" ? "8 6" : null}).bindTooltip(C[k].nombre).addTo(routeLayers);
   });
-  if (C[ci].nombre.includes("Tren")) {
+  if (C[k].nombre.includes("Tren")) {
     const tn = D.tren_nuevo_desde; L.circleMarker([tn[1], tn[0]], {radius: 6, color: "#c0504d", weight: 2, fillColor: "#fff", fillOpacity: 1}).bindTooltip("Contraalmirante Cordero: desde acá faltan 83 km de vía nueva hasta Añelo").addTo(routeLayers);
   }
+}
+function drawChain(ci){
+  routeLayers.clearLayers();
+  if (ci < 0) { C.forEach((c, k) => drawOne(k, true)); } else { drawOne(ci, false); }
 }
 function at(path, s){ const R = path.coords; let lo = 0, hi = R.length - 1; while (hi - lo > 1){ const m = (lo + hi) >> 1; (R[m][2] <= s) ? lo = m : hi = m; }
   const a = R[lo], b = R[hi], f = (s - a[2]) / Math.max(1e-9, b[2] - a[2]); return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]; }
 // unidades animadas
 let units = [];
 function clearUnits(){ units.forEach(u => map.removeLayer(u.m)); units = []; }
-function unitsFor(ci, y){
+function unitsForChain(c, y){
   // por tramo: unidades en circulación = viajes/día × días de ciclo (ida y vuelta), un punto cada `por_punto`
   const out = []; let total = 0;
-  C[ci].paths.forEach((p, pi) => {
+  C[c].paths.forEach((p, pi) => {
     const u = U[p.modo]; const viajes = y.nat_t / u.t; const vdia = viajes / S.dias_operativos;
     const ciclo = Math.max(1, 2 * p.km / u.km_dia + 1); const enRuta = vdia * ciclo; total += enRuta;
     let n = Math.round(enRuta / u.por_punto); if (y.nat_t > 0 && n < 1) n = 1;
-    for (let k = 0; k < n; k++) out.push({pi, s: Math.random(), dir: (p.modo === "camion" && k % 2) ? -1 : 1, modo: p.modo});
+    for (let k = 0; k < n; k++) out.push({c, pi, s: Math.random(), dir: (p.modo === "camion" && k % 2) ? -1 : 1, modo: p.modo});
   });
   return {list: out, total};
+}
+function unitsFor(ci, y){
+  if (ci >= 0) return unitsForChain(ci, y);
+  const all = {list: [], total: 0};
+  C.forEach((_, k) => { const r = unitsForChain(k, y); all.list.push(...r.list); all.total += r.total; });
+  return all;
 }
 function setUnits(ci, y){
   const want = unitsFor(ci, y);
@@ -232,7 +245,9 @@ const natMax = Math.max(...Y.map(y => y.nat_t)); const bars = document.getElemen
 Y.forEach(y => { const b = document.createElement("div"); b.className = "bar"; b.style.height = Math.max(2, 46 * y.nat_t / natMax) + "px"; b.title = `${y.anio}: ${fmt(y.nat_t / 1e3)} kt`; bars.appendChild(b); });
 document.getElementById("y0").textContent = Y[0].anio; document.getElementById("y1").textContent = Y[Y.length - 1].anio;
 const chainsDiv = document.getElementById("chains");
-C.forEach((c, i) => { const b = document.createElement("button"); b.textContent = c.nombre; b.onclick = () => { ci = i; [...chainsDiv.children].forEach((x, k) => x.classList.toggle("on", k === i)); drawChain(i); show(idx, true); }; chainsDiv.appendChild(b); });
+function pick(i){ ci = i; [...chainsDiv.children].forEach((x, k) => x.classList.toggle("on", (i < 0) ? (k === C.length) : (k === i))); drawChain(i); show(idx, true); }
+C.forEach((c, i) => { const b = document.createElement("button"); b.textContent = c.nombre; b.onclick = () => pick(i); chainsDiv.appendChild(b); });
+{ const b = document.createElement("button"); b.textContent = "todas a la vez"; b.onclick = () => pick(-1); chainsDiv.appendChild(b); }
 document.getElementById("legend").innerHTML = Object.values(U).filter((u, i, a) => a.findIndex(x => x.nombre === u.nombre) === i).map(u => `<span class="dot" style="background:${u.color}"></span>${u.nombre}${u.por_punto > 1 ? ", un punto = " + u.por_punto : ""}`).join(" · ") + ` · <span class="dot" style="background:#9aa5ad"></span>vuelve vacío`;
 document.getElementById("note").innerHTML = `Supuestos: ${fmt(S.t_por_camion)} t por camión, 2.400 t por barcaza, 2.000 t por tren, ${S.dias_operativos} días operativos. Costos por tonelada hasta el pozo: camión 97 (flete 70 y última milla 27, Infobae 8/2026); barcaza y camión 62,7; barcaza, tren y camión 35,2 (El Cronista 9/2026); hidrovía 48 (GlobalPorts 7/2026); arena cercana 30, calidad por confirmar. Emisiones pozo a rueda: camión 137, tren 24, río 33, mar 6,6 gCO₂e/tkm (EU-27 2018). Toda la arena nacional se supone por la cadena elegida.`;
 const slider = document.getElementById("slider"); slider.max = Y.length - 1;
@@ -241,19 +256,30 @@ const YEAR_SECONDS = 4;
 const acum = C.map(() => 0);
 function acumHasta(cIdx, i){ let a = 0; for (let k = 0; k <= i; k++) a += Y[k].nat_t * C[cIdx].usd_t / 1e6; return a; }
 function show(i, keep){
-  idx = i; const y = Y[i], c = C[ci]; slider.value = i;
+  idx = i; const y = Y[i]; slider.value = i;
   document.getElementById("year").textContent = y.anio + (D.partial === y.anio ? " ·" : "");
   document.getElementById("ctx").textContent = D.contexto[String(y.anio)] || "";
-  document.getElementById("estado").innerHTML = `<b>${c.estado}</b>. ${c.limite}`;
   document.getElementById("nat").textContent = fmt(y.nat_t / 1e3) + " kt";
   const total = setUnits(ci, y);
-  document.getElementById("units").textContent = fmt(total);
-  document.getElementById("kmcam").textContent = fmt(c.km_camion) + " de " + fmt(c.km_total) + " km";
-  const costo = y.nat_t * c.usd_t / 1e6, base = y.nat_t * C[0].usd_t / 1e6;
-  document.getElementById("costo").innerHTML = fmt(costo, 1) + '<span class="u">millones de USD</span>';
-  document.getElementById("ahorro").textContent = (ci === 0) ? "es la referencia" : ("ahorra " + fmt(base - costo, 1) + " MUSD");
-  document.getElementById("co2").textContent = fmt(y.nat_t * c.kg_co2e_t / 1e6, 1) + " kt CO₂e";
-  document.getElementById("acum").textContent = fmt(acumHasta(ci, i)) + " MUSD";
+  const cmp = document.getElementById("cmp"), single = document.getElementById("single");
+  if (ci < 0) {
+    document.getElementById("estado").innerHTML = "<b>Las cinco cadenas a la vez</b>, cada una con sus unidades. La tabla compara el mismo año por cada camino.";
+    single.style.display = "none"; cmp.style.display = "block";
+    let h = "<tr><th>cadena</th><th>MUSD</th><th>unidades</th><th>kt CO₂e</th></tr>";
+    C.forEach((c, k) => { const r = unitsForChain(k, y); h += `<tr><td>${c.nombre}</td><td class="v">${fmt(y.nat_t * c.usd_t / 1e6, 1)}</td><td class="v">${fmt(r.total)}</td><td class="v">${fmt(y.nat_t * c.kg_co2e_t / 1e6, 1)}</td></tr>`; });
+    cmp.innerHTML = h;
+  } else {
+    const c = C[ci];
+    single.style.display = "block"; cmp.style.display = "none";
+    document.getElementById("estado").innerHTML = `<b>${c.estado}</b>. ${c.limite}`;
+    document.getElementById("units").textContent = fmt(total);
+    document.getElementById("kmcam").textContent = fmt(c.km_camion) + " de " + fmt(c.km_total) + " km";
+    const costo = y.nat_t * c.usd_t / 1e6, base = y.nat_t * C[0].usd_t / 1e6;
+    document.getElementById("costo").innerHTML = fmt(costo, 1) + '<span class="u">millones de USD</span>';
+    document.getElementById("ahorro").textContent = (ci === 0) ? "es la referencia" : ("ahorra " + fmt(base - costo, 1) + " MUSD");
+    document.getElementById("co2").textContent = fmt(y.nat_t * c.kg_co2e_t / 1e6, 1) + " kt CO₂e";
+    document.getElementById("acum").textContent = fmt(acumHasta(ci, i)) + " MUSD";
+  }
   [...bars.children].forEach((b, k) => { b.className = "bar" + (k === i ? " on" : (k < i ? " done" : "")); });
   if (!keep) yearClock = 0;
 }
@@ -271,7 +297,7 @@ function finish(){
 function frame(now){
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
   if (playing && !ended){ yearClock += dt; if (yearClock >= YEAR_SECONDS){ yearClock = 0; if (idx + 1 < Y.length) show(idx + 1); else finish(); } }
-  units.forEach(u => { const p = C[ci].paths[u.pi]; const secs = 3 + 8 * p.km / 1500; u.s += u.dir * dt / secs; if (u.s > 1) u.s -= 1; if (u.s < 0) u.s += 1; u.m.setLatLng(at(p, u.s)); });
+  units.forEach(u => { const p = C[u.c].paths[u.pi]; const secs = 3 + 8 * p.km / 1500; u.s += u.dir * dt / secs; if (u.s > 1) u.s -= 1; if (u.s < 0) u.s += 1; u.m.setLatLng(at(p, u.s)); });
   requestAnimationFrame(frame);
 }
 document.getElementById("play").onclick = e => { if (ended) return; playing = !playing; e.target.textContent = playing ? "Pausa" : "Reproducir"; };
