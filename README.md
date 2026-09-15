@@ -21,7 +21,7 @@ rutas y las áreas donde se bombea: <https://dpinero14.github.io/arena-lab/mapa_
 
 | Notebook | Qué hace |
 |---|---|
-| `01_donde_buscar_arena` | Baja y clasifica 21.546 polígonos del mapa geológico en cinco clases de blanco. Calcula un puntaje de 0 a 100 por polígono con la geología, la distancia al centro de la demanda, a la red vial y a los depósitos de arena conocidos. Lista los mejores blancos. Controla el puntaje en siete lugares con arena conocida. Dibuja el mapa. |
+| `01_donde_buscar_arena` | Baja y clasifica 21.546 polígonos del mapa geológico en cinco clases de blanco. Calcula un puntaje de 0 a 100 por polígono con la geología, la distancia al centro de la demanda, a la red vial y a los depósitos de arena conocidos. Lista los mejores blancos. Controla el puntaje en siete lugares con arena conocida. Traza la ruta real de los camiones de Ibicuy a Añelo y mide qué blancos quedan al costado. Dibuja el mapa. |
 
 Las reglas y los pesos están en `src/alab/targets.py` y `src/alab/score.py`,
 en un solo lugar cada uno, para que se puedan leer y discutir. Todo está
@@ -78,11 +78,18 @@ Limay y Negro, entre Senillosa y General Roca. El Bajo de Añelo es una de las
 tres zonas que Neuquén explora. Su puntaje pierde por la distancia a rutas
 nacionales, 68 km, porque la red vial usada no tiene las rutas provinciales.
 
-**La ruta de la arena pasa por médanos.** Los polígonos con mejor puntaje
-absoluto después de Allen son los depósitos eólicos holocenos de la hoja Santa
-Isabel, en La Pampa: 38 polígonos, 1.700 km², a 190 a 290 km del consumo y a
-9 km de una ruta nacional en la mediana. Los camiones que vienen de Entre Ríos
-pasan al lado. Que sirvan o no, lo dice el laboratorio.
+**La ruta de la arena cruza un mar de arena.** El recorrido real de los
+camiones, de Ibicuy a Añelo por la RN 12, la RN 5, la RN 35, la RN 152, la RP
+20 y la RN 151, calculado con un ruteador abierto sobre OpenStreetMap, mide
+1.461 km, contra los 1.474 que cita la prensa, y 20 horas de manejo continuo.
+Entre Santa Rosa y Puelches atraviesa el manto arenoso de La Pampa: a menos de
+15 km de la traza hay 83 polígonos de arena eólica cuaternaria, 19.800 km², en
+las hojas Santa Rosa y General Acha, con puntajes de hasta 75. Los camiones
+que traen arena desde 1.400 km pasan por encima de arena durante 300 km. Que
+esa arena sirva o no, lo dice el laboratorio; que nadie la haya ensayado en
+público, lo dice este mapa.
+
+![La ruta de la arena](docs/figures/ruta_arena.png)
 
 ## Cómo se explora arena de fractura, en dos párrafos
 
@@ -125,6 +132,7 @@ src/alab/
   score.py       puntaje de prospectividad con pesos declarados
   validate.py    control contra lugares con arena conocida
   demand.py      arena bombeada por área, con coordenadas de pozo
+  route.py       la ruta de la arena de Ibicuy a Añelo, por OSRM, con puntos de paso de la prensa
   maps.py        mapa interactivo (folium) y figuras
 notebooks/       01_donde_buscar_arena
 tests/           pytest con polígonos sintéticos
@@ -159,6 +167,9 @@ data/raw/        vacío y en .gitignore; ver data/README.md
 - SEGEMAR, SIGAM, mapa geológico 1:250.000, depósitos de minerales
   industriales y geoquímica: <https://sigam.segemar.gov.ar>, CC-BY 4.0, por WFS.
 - IDE Transporte, tránsito medio diario de rutas nacionales: datos.gob.ar.
+- Ruta de la arena: traza calculada con OSRM sobre OpenStreetMap (ODbL), con
+  los puntos de paso que describen Diario Neuquino y LM Neuquén en septiembre
+  de 2026.
 - Secretaría de Energía, registro de fractura y producción no convencional:
   <https://datos.energia.gob.ar>, CC-BY 4.0.
 - Lugares con arena conocida: prensa citada en `src/alab/validate.py`.

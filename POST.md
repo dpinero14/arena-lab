@@ -36,10 +36,13 @@ código a la vista.
    explora Neuquén, tiene 89 km² de médanos longitudinales a 28 km del centro
    de la demanda.
 
-5. **La ruta de la arena pasa por médanos.** Los depósitos eólicos holocenos
-   de Santa Isabel, La Pampa, 1.700 km², quedan a 190 a 290 km del consumo y a
-   9 km de una ruta nacional. Los camiones que vienen de Entre Ríos pasan al
-   lado. Que sirvan o no, lo dice el laboratorio.
+5. **La ruta de la arena cruza un mar de arena.** El recorrido real de los
+   camiones, Ibicuy a Añelo, ruteado sobre OpenStreetMap: 1.461 km y 20
+   horas de manejo continuo. Entre Santa Rosa y Puelches atraviesa el manto
+   arenoso de La Pampa: 83 polígonos de arena eólica, 19.800 km², a menos de
+   15 km de la traza, con puntajes de hasta 75. Los camiones que traen arena
+   desde 1.400 km pasan por encima de arena durante 300 km. Que sirva, lo
+   dice el laboratorio. Que nadie la ensayó en público, lo dice el mapa.
 
 ## Lo que hay que decir sí o sí
 

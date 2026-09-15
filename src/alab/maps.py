@@ -33,7 +33,7 @@ def simplify(gdf: gpd.GeoDataFrame, tol_deg: float = 0.002, grid_deg: float = 0.
     return g
 
 
-def interactive_map(scored: gpd.GeoDataFrame, deposits: gpd.GeoDataFrame | None = None, demand: gpd.GeoDataFrame | None = None, known: gpd.GeoDataFrame | None = None, roads: gpd.GeoDataFrame | None = None, min_score: float = 20.0, min_area_km2: float = 1.0, tol_deg: float = 0.003, path: str | Path | None = None) -> folium.Map:
+def interactive_map(scored: gpd.GeoDataFrame, deposits: gpd.GeoDataFrame | None = None, demand: gpd.GeoDataFrame | None = None, known: gpd.GeoDataFrame | None = None, roads: gpd.GeoDataFrame | None = None, min_score: float = 20.0, min_area_km2: float = 1.0, tol_deg: float = 0.003, path: str | Path | None = None, route: gpd.GeoDataFrame | None = None, waypoints: gpd.GeoDataFrame | None = None) -> folium.Map:
     """Mapa folium con los polígonos por puntaje, depósitos, demanda y lugares conocidos."""
     sel = scored[scored["score"] >= min_score].to_crs(CRS_GEO)
     if min_area_km2 > 0:
@@ -77,11 +77,47 @@ def interactive_map(scored: gpd.GeoDataFrame, deposits: gpd.GeoDataFrame | None 
             color = "#2e8b57" if r.estado.startswith("favorable") else ("#c0504d" if "cuestionada" in r.estado else "#555555")
             folium.Marker([r.lat, r.lon], icon=folium.Icon(color="green" if color == "#2e8b57" else ("red" if color == "#c0504d" else "gray"), icon="info-sign"), tooltip=f"{r.lugar}: {r.estado}").add_to(fg)
         fg.add_to(m)
+    if route is not None and len(route):
+        r = route.iloc[0]
+        fg = folium.FeatureGroup(name=f"ruta de la arena, Ibicuy a Añelo ({r['km']:,.0f} km)".replace(",", "."))
+        coords = [(y, x) for x, y in simplify(route.to_crs(CRS_GEO), 0.001).geometry.iloc[0].coords]
+        folium.PolyLine(coords, color="#111111", weight=5, opacity=0.9, tooltip=f"{r['nombre']}: {r['km']:,.0f} km".replace(",", ".")).add_to(fg)
+        folium.PolyLine(coords, color="#f2b134", weight=2.5, opacity=1.0).add_to(fg)
+        if waypoints is not None and len(waypoints):
+            for _, w in waypoints.iterrows():
+                folium.CircleMarker([w["lat"], w["lon"]], radius=5, color="#111111", weight=1.5, fill=True, fill_color="#ffffff", fill_opacity=1.0, tooltip=f"{w['lugar']}: {w['nota']}").add_to(fg)
+        fg.add_to(m)
     folium.LayerControl(collapsed=False).add_to(m)
     if path is not None:
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         m.save(str(path))
     return m
+
+
+def route_figure(route: gpd.GeoDataFrame, waypoints: gpd.GeoDataFrame, roads_all: gpd.GeoDataFrame, scored: gpd.GeoDataFrame | None, path: str | Path, min_score: float = 40.0) -> Path:
+    """PNG de la ruta completa sobre la red de rutas nacionales, con los blancos de mayor puntaje."""
+    fig, ax = plt.subplots(figsize=(10, 8))
+    roads_all.to_crs(CRS_GEO).plot(ax=ax, color="#cccccc", linewidth=0.5)
+    if scored is not None:
+        top = scored[scored["score"] >= min_score].to_crs(CRS_GEO)
+        top.plot(ax=ax, color="#f2b134", linewidth=0, alpha=0.8, label=f"blancos con puntaje ≥ {min_score:g}")
+    route.to_crs(CRS_GEO).plot(ax=ax, color="#111111", linewidth=2.2)
+    for _, w in waypoints.iterrows():
+        ax.plot(w["lon"], w["lat"], marker="o", color="white", markeredgecolor="black", markersize=6)
+        ax.annotate(w["lugar"].split(",")[0], (w["lon"], w["lat"]), xytext=(5, 4), textcoords="offset points", fontsize=8)
+    r = route.iloc[0]
+    ax.set_xlim(-71.5, -57.5); ax.set_ylim(-41.5, -32.5); ax.set_aspect(1 / 0.78)
+    ax.set_title(f"La ruta de la arena: Ibicuy a Añelo, {r['km']:,.0f} km por caminos reales".replace(",", "."), fontsize=12, loc="left")
+    ax.plot([], [], color="#111111", linewidth=2.2, label="ruta de la arena (ruteo OSRM sobre OpenStreetMap)")
+    ax.plot([], [], color="#cccccc", linewidth=1, label="rutas nacionales")
+    ax.legend(loc="lower right", fontsize=8, frameon=False)
+    ax.set_xlabel("longitud"); ax.set_ylabel("latitud")
+    fig.text(0.99, 0.01, "datos: OSRM y OpenStreetMap, IDE Transporte, SEGEMAR · arena-lab", ha="right", fontsize=7, color="gray")
+    fig.tight_layout()
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=140)
+    plt.close(fig)
+    return Path(path)
 
 
 def static_map(scored: gpd.GeoDataFrame, deposits: gpd.GeoDataFrame | None, known: gpd.GeoDataFrame | None, path: str | Path, min_score: float = 20.0, title: str = "Dónde buscar arena de fractura: puntaje de prospectividad") -> Path:
@@ -126,4 +162,4 @@ def class_bar(scored: gpd.GeoDataFrame, path: str | Path) -> Path:
     return Path(path)
 
 
-__all__ = ["CLASS_COLORS", "simplify", "interactive_map", "static_map", "class_bar"]
+__all__ = ["CLASS_COLORS", "simplify", "interactive_map", "static_map", "class_bar", "route_figure"]
