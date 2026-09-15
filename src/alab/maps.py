@@ -43,7 +43,7 @@ def interactive_map(scored: gpd.GeoDataFrame, deposits: gpd.GeoDataFrame | None 
     for c in ("d_consumo_km", "d_ruta_km"):
         if c in g.columns:
             g[c] = g[c].round(0)
-    m = folium.Map(location=[-38.6, -68.5], zoom_start=7, tiles="cartodbpositron", control_scale=True)
+    m = folium.Map(location=[-38.6, -68.5], zoom_start=7, tiles="OpenStreetMap", control_scale=True)
     cmap = matplotlib.colormaps["YlOrRd"]
 
     def style(feat):
