@@ -77,23 +77,25 @@ def chain_paths(route_cache: Path, bb_cache: Path, chains: list[Chain] = CHAINS)
     """Para cada cadena: sus tramos animables, con modo, traza y km."""
     ibicuy = _osrm_path(route_cache)
     bb = _osrm_path(bb_cache)
+    # (modo, traza, corredor): el corredor nombra las rutas nacionales que ese tramo en camión carga; None si no toca la ruta larga
     by_name = {
-        "camión directo, hoy": [("camion", ibicuy)],
-        "barcaza a Bahía Blanca y camión": [("maritimo", AGUA_IBICUY_BB), ("camion", bb)],
-        "barcaza, Tren Norpatagónico y camión": [("maritimo", AGUA_IBICUY_BB), ("tren", TREN_BB_ANELO), ("camion", CAMION_ULTIMA_MILLA)],
-        "hidrovía patagónica por el río Negro": [("maritimo", AGUA_IBICUY_BB + AGUA_BB_VIEDMA[1:]), ("fluvial", RIO_NEGRO_ARRIBA), ("camion", CAMION_ULTIMA_MILLA)],
-        "arena cercana de Neuquén": [("camion", CAMION_CERCANA)],
+        "camión directo, hoy": [("camion", ibicuy, "Ibicuy")],
+        "barcaza a Bahía Blanca y camión": [("maritimo", AGUA_IBICUY_BB, None), ("camion", bb, "Bahía Blanca")],
+        "barcaza, Tren Norpatagónico y camión": [("maritimo", AGUA_IBICUY_BB, None), ("tren", TREN_BB_ANELO, None), ("camion", CAMION_ULTIMA_MILLA, None)],
+        "hidrovía patagónica por el río Negro": [("maritimo", AGUA_IBICUY_BB + AGUA_BB_VIEDMA[1:], None), ("fluvial", RIO_NEGRO_ARRIBA, None), ("camion", CAMION_ULTIMA_MILLA, None)],
+        "arena cercana de Neuquén": [("camion", CAMION_CERCANA, None)],
     }
     out = []
     for c in chains:
-        legs = [{"modo": modo, **_path(coords)} for modo, coords in by_name[c.nombre]]
+        legs = [{"modo": modo, "corredor": corredor, **_path(coords)} for modo, coords, corredor in by_name[c.nombre]]
         out.append({"nombre": c.nombre, "usd_t": round(c.usd_t_pozo, 1), "kg_co2e_t": round(c.kg_co2e_t(), 1), "km_camion": round(c.km_camion), "km_total": round(c.km_total),
                     "estado": c.estado, "limite": c.limite, "capacidad_mt": c.capacidad_mt, "paths": legs})
     return out
 
 
 def logistics_animation_html(yearly: pd.DataFrame, chains: list[dict], layers: dict, waypoints: gpd.GeoDataFrame, path: str | Path, partial_year: int | None = None, s: dict = SUPUESTOS) -> Path:
-    """Escribe la página v2. `layers` trae GeoJSON ya simplificados: blancos, ferrocarril, rios, puertos."""
+    """Escribe la página v2. `layers` trae GeoJSON ya simplificados: blancos, ferrocarril, rios, puertos y, si está, tramos con el tránsito de 2017."""
+    layers = {"tramos": {"type": "FeatureCollection", "features": []}, **layers}
     data = {
         "years": [{k: (None if pd.isna(v) else (int(v) if float(v).is_integer() else float(v))) for k, v in row.items()} for row in yearly.to_dict("records")],
         "partial": partial_year, "supuestos": s, "unidades": UNIDADES, "contexto": {str(k): v for k, v in CONTEXTO.items()},
@@ -164,6 +166,8 @@ input[type=range]{flex:1;accent-color:var(--accent)}
   <div class="row"><span class="l">kilómetros en camión por tonelada</span><span class="v" id="kmcam"></span></div>
   <div class="big"><div class="l">costo de transporte del año, hasta el pozo</div><div class="v" id="costo"></div></div>
   <div class="row"><span class="l">contra el camión directo</span><span class="v" id="ahorro"></span></div>
+  <div class="row"><span class="l">pasadas de camión por día en rutas nacionales</span><span class="v" id="pasadas"></span></div>
+  <div class="row"><span class="l">tramos donde la arena supera todo el tránsito de 2017</span><span class="v" id="superados"></span></div>
   <div class="row"><span class="l">emisiones del año</span><span class="v" id="co2"></span></div>
   <div class="row"><span class="l">acumulado 2012 a hoy, esta cadena</span><span class="v" id="acum"></span></div>
   </div>
@@ -175,6 +179,7 @@ input[type=range]{flex:1;accent-color:var(--accent)}
     <label><input type="checkbox" id="lyTren" checked> ferrocarril</label>
     <label><input type="checkbox" id="lyRios" checked> ríos</label>
     <label><input type="checkbox" id="lyPuertos" checked> puertos</label>
+    <label><input type="checkbox" id="lyTramos" checked> presión sobre la ruta</label>
   </div>
   <div class="legend" id="legend"></div>
   <div class="note" id="note"></div>
@@ -185,14 +190,34 @@ input[type=range]{flex:1;accent-color:var(--accent)}
 const D = __DATA__;
 const S = D.supuestos, Y = D.years, U = D.unidades, C = D.chains;
 const fmt = (x, d=0) => x == null ? "–" : x.toLocaleString("es-AR", {maximumFractionDigits: d, minimumFractionDigits: d});
-const map = L.map("map").setView([-37.2, -64.0], 6);
+const Q = new URLSearchParams(location.search);   // ?ys=segundos por año, ?chain=índice (-1 todas), ?video=1 esconde los controles
+const map = L.map("map", {zoomControl: !Q.has("video")}).setView([-37.2, -64.0], 6);
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 18, attribution: "&copy; OpenStreetMap"}).addTo(map);
+// tramos de ruta nacional con su tránsito de 2017: se pintan cada año según cuánto pesan los camiones de arena
+const lyTramos = L.geoJSON(D.layers.tramos, {style: {color: "#4caf50", weight: 16, opacity: .55, lineCap: "butt"}, onEachFeature: (f, l) => l.bindTooltip("", {sticky: true})}).addTo(map);
+function pasadasEn(corredor, ci, y){
+  // pasadas de camión de larga distancia por día sobre ese corredor: ida cargada y vuelta vacía; con "todas" se muestra la de hoy, el camión directo
+  const per = 2 * (y.nat_t / U.camion.t) / S.dias_operativos; const c = C[ci < 0 ? 0 : ci]; let n = 0;
+  c.paths.forEach(p => { if (p.modo === "camion" && p.corredor === corredor) n += per; });
+  return n;
+}
+const colorPct = pct => pct >= 100 ? "#d7301f" : pct >= 50 ? "#fc8d59" : pct >= 20 ? "#fee08b" : "#4caf50";
+function paintTramos(ci, y){
+  let sup = 0, kmSup = 0, n = 0, pasadas = 0;
+  lyTramos.eachLayer(l => { const f = l.feature.properties; const p = pasadasEn(f.corredor, ci, y); const pct = 100 * p / f.tmda17;
+    l.setStyle({color: colorPct(pct)});
+    l.setTooltipContent(`${f.ruta}, ${fmt(f.km)} km: ${fmt(f.tmda17)} vehículos por día en 2017; ${fmt(p)} pasadas de camiones de arena por día en ${y.anio} (${fmt(pct)} % del tránsito de 2017)`);
+    if (f.corredor === "Ibicuy") { n++; if (pct >= 100) { sup++; kmSup += f.km; } }
+    pasadas = Math.max(pasadas, p); });
+  return {sup, kmSup, n, pasadas};
+}
 // capas de contexto
 const lyBlancos = L.geoJSON(D.layers.blancos, {style: f => ({color: "#c98a1a", weight: .4, fillColor: "#f2b134", fillOpacity: .18 + .4 * Math.min(1, (f.properties.score || 0) / 100)}), onEachFeature: (f, l) => l.bindTooltip(`${f.properties.nombre}: puntaje ${f.properties.score}`)}).addTo(map);
 const lyTren = L.geoJSON(D.layers.ferrocarril, {style: f => ({color: f.properties.estado === "Activo" ? "#2e8b57" : "#9aa5ad", weight: f.properties.estado === "Activo" ? 1.6 : 1, dashArray: f.properties.estado === "Activo" ? null : "4 4", opacity: .8}), onEachFeature: (f, l) => l.bindTooltip(`Ferrocarril ${f.properties.linea}, ${f.properties.operador}: ${f.properties.estado}`)}).addTo(map);
 const lyRios = L.geoJSON(D.layers.rios, {style: {color: "#3b8ed0", weight: 1.4, opacity: .7}, interactive: false}).addTo(map);
 const lyPuertos = L.layerGroup(D.layers.puertos.map(p => L.circleMarker([p.lat, p.lon], {radius: 6, color: "#111", weight: 1.5, fillColor: "#3b8ed0", fillOpacity: 1}).bindTooltip(`Puerto ${p.nombre}`))).addTo(map);
-[["lyBlancos", lyBlancos], ["lyTren", lyTren], ["lyRios", lyRios], ["lyPuertos", lyPuertos]].forEach(([id, ly]) => document.getElementById(id).onchange = e => e.target.checked ? ly.addTo(map) : map.removeLayer(ly));
+[["lyBlancos", lyBlancos], ["lyTren", lyTren], ["lyRios", lyRios], ["lyPuertos", lyPuertos], ["lyTramos", lyTramos]].forEach(([id, ly]) => document.getElementById(id).onchange = e => e.target.checked ? ly.addTo(map) : map.removeLayer(ly));
+if (Q.has("video")) { ["ctl", "layers", "foot"].forEach(cls => document.querySelector("." + cls).style.display = "none"); }
 D.waypoints.forEach(w => L.circleMarker([w.lat, w.lon], {radius: 4, color: "#111", weight: 1.2, fillColor: "#fff", fillOpacity: 1}).bindTooltip(`${w.lugar}: ${w.nota}`).addTo(map));
 // trazas por cadena
 const routeLayers = L.layerGroup().addTo(map);
@@ -248,11 +273,12 @@ const chainsDiv = document.getElementById("chains");
 function pick(i){ ci = i; [...chainsDiv.children].forEach((x, k) => x.classList.toggle("on", (i < 0) ? (k === C.length) : (k === i))); drawChain(i); show(idx, true); }
 C.forEach((c, i) => { const b = document.createElement("button"); b.textContent = c.nombre; b.onclick = () => pick(i); chainsDiv.appendChild(b); });
 { const b = document.createElement("button"); b.textContent = "todas a la vez"; b.onclick = () => pick(-1); chainsDiv.appendChild(b); }
-document.getElementById("legend").innerHTML = Object.values(U).filter((u, i, a) => a.findIndex(x => x.nombre === u.nombre) === i).map(u => `<span class="dot" style="background:${u.color}"></span>${u.nombre}${u.por_punto > 1 ? ", un punto = " + u.por_punto : ""}`).join(" · ") + ` · <span class="dot" style="background:#9aa5ad"></span>vuelve vacío`;
+document.getElementById("legend").innerHTML = Object.values(U).filter((u, i, a) => a.findIndex(x => x.nombre === u.nombre) === i).map(u => `<span class="dot" style="background:${u.color}"></span>${u.nombre}${u.por_punto > 1 ? ", un punto = " + u.por_punto : ""}`).join(" · ") + ` · <span class="dot" style="background:#9aa5ad"></span>vuelve vacío`
+  + `<br>Presión sobre la ruta, pasadas de arena contra todo el tránsito de 2017 del tramo: <span class="dot" style="background:#4caf50"></span>menos del 20 % · <span class="dot" style="background:#fee08b"></span>20 a 50 · <span class="dot" style="background:#fc8d59"></span>50 a 100 · <span class="dot" style="background:#d7301f"></span>la arena sola supera el tránsito de 2017`;
 document.getElementById("note").innerHTML = `Supuestos: ${fmt(S.t_por_camion)} t por camión, 2.400 t por barcaza, 2.000 t por tren, ${S.dias_operativos} días operativos. Costos por tonelada hasta el pozo: camión 97 (flete 70 y última milla 27, Infobae 8/2026); barcaza y camión 62,7; barcaza, tren y camión 35,2 (El Cronista 9/2026); hidrovía 48 (GlobalPorts 7/2026); arena cercana 30, calidad por confirmar. Emisiones pozo a rueda: camión 137, tren 24, río 33, mar 6,6 gCO₂e/tkm (EU-27 2018). Toda la arena nacional se supone por la cadena elegida.`;
 const slider = document.getElementById("slider"); slider.max = Y.length - 1;
-let idx = 0, ci = 0, playing = true, last = performance.now(), yearClock = 0, ended = false;
-const YEAR_SECONDS = 4;
+let idx = 0, ci = Math.max(-1, Math.min(C.length - 1, parseInt(Q.get("chain") || "0"))), playing = true, last = performance.now(), yearClock = 0, ended = false;
+const YEAR_SECONDS = Math.max(0.5, parseFloat(Q.get("ys") || "4"));
 const acum = C.map(() => 0);
 function acumHasta(cIdx, i){ let a = 0; for (let k = 0; k <= i; k++) a += Y[k].nat_t * C[cIdx].usd_t / 1e6; return a; }
 function show(i, keep){
@@ -261,18 +287,22 @@ function show(i, keep){
   document.getElementById("ctx").textContent = D.contexto[String(y.anio)] || "";
   document.getElementById("nat").textContent = fmt(y.nat_t / 1e3) + " kt";
   const total = setUnits(ci, y);
+  const pr = paintTramos(ci, y);
   const cmp = document.getElementById("cmp"), single = document.getElementById("single");
   if (ci < 0) {
-    document.getElementById("estado").innerHTML = "<b>Las cinco cadenas a la vez</b>, cada una con sus unidades. La tabla compara el mismo año por cada camino.";
+    document.getElementById("estado").innerHTML = "<b>Las cinco cadenas a la vez</b>, cada una con sus unidades. La tabla compara el mismo año por cada camino; la ruta se pinta con la presión del camión directo, la de hoy.";
     single.style.display = "none"; cmp.style.display = "block";
-    let h = "<tr><th>cadena</th><th>MUSD</th><th>unidades</th><th>kt CO₂e</th></tr>";
-    C.forEach((c, k) => { const r = unitsForChain(k, y); h += `<tr><td>${c.nombre}</td><td class="v">${fmt(y.nat_t * c.usd_t / 1e6, 1)}</td><td class="v">${fmt(r.total)}</td><td class="v">${fmt(y.nat_t * c.kg_co2e_t / 1e6, 1)}</td></tr>`; });
+    let h = "<tr><th>cadena</th><th>MUSD</th><th>unidades</th><th>pasadas/día</th><th>kt CO₂e</th></tr>";
+    C.forEach((c, k) => { const r = unitsForChain(k, y); const largo = c.paths.some(p => p.modo === "camion" && p.corredor); const pas = largo ? 2 * (y.nat_t / U.camion.t) / S.dias_operativos : 0;
+      h += `<tr><td>${c.nombre}</td><td class="v">${fmt(y.nat_t * c.usd_t / 1e6, 1)}</td><td class="v">${fmt(r.total)}</td><td class="v">${fmt(pas)}</td><td class="v">${fmt(y.nat_t * c.kg_co2e_t / 1e6, 1)}</td></tr>`; });
     cmp.innerHTML = h;
   } else {
     const c = C[ci];
     single.style.display = "block"; cmp.style.display = "none";
     document.getElementById("estado").innerHTML = `<b>${c.estado}</b>. ${c.limite}`;
     document.getElementById("units").textContent = fmt(total);
+    document.getElementById("pasadas").textContent = fmt(pr.pasadas);
+    document.getElementById("superados").textContent = pr.n ? `${fmt(pr.sup)} de ${fmt(pr.n)}, ${fmt(pr.kmSup)} km` : "–";
     document.getElementById("kmcam").textContent = fmt(c.km_camion) + " de " + fmt(c.km_total) + " km";
     const costo = y.nat_t * c.usd_t / 1e6, base = y.nat_t * C[0].usd_t / 1e6;
     document.getElementById("costo").innerHTML = fmt(costo, 1) + '<span class="u">millones de USD</span>';
@@ -303,7 +333,7 @@ function frame(now){
 document.getElementById("play").onclick = e => { if (ended) return; playing = !playing; e.target.textContent = playing ? "Pausa" : "Reproducir"; };
 document.getElementById("again").onclick = () => { document.getElementById("end").style.display = "none"; ended = false; playing = true; document.getElementById("play").textContent = "Pausa"; show(0); };
 slider.oninput = e => { playing = false; ended = false; document.getElementById("end").style.display = "none"; document.getElementById("play").textContent = "Reproducir"; show(+e.target.value); };
-chainsDiv.children[0].classList.add("on"); drawChain(0); show(0); requestAnimationFrame(frame);
+pick(ci); requestAnimationFrame(frame);
 </script></body></html>
 """
 

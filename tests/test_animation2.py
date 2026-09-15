@@ -37,3 +37,16 @@ def test_html_v2(tmp_path):
     out = logistics_animation_html(y, chain_paths(a, b), layers, waypoints_frame(), tmp_path / "v2.html", partial_year=2016)
     html = out.read_text(encoding="utf-8")
     assert "__DATA__" not in html and "hidrovía" in html and CONTEXTO[2016] in html
+
+
+def test_corredor_y_capa_de_tramos(tmp_path):
+    a = _fake_osrm(tmp_path, "a.json", [[-59.17, -33.74], [-68.79, -38.35]]); b = _fake_osrm(tmp_path, "b.json", [[-62.27, -38.72], [-68.79, -38.35]])
+    cp = chain_paths(a, b)
+    assert cp[0]["paths"][0]["corredor"] == "Ibicuy" and cp[1]["paths"][1]["corredor"] == "Bahía Blanca"
+    assert all(p["corredor"] is None for c in cp[2:] for p in c["paths"])
+    frac = pd.DataFrame({"well_id": [1], "basin": ["NEUQUINA"], "reservoir_type": ["NO CONVENCIONAL"], "sand_domestic_t": [3000], "sand_imported_t": [0], "frac_start": pd.to_datetime(["2015-01-01"])})
+    y = yearly_series(frac, route_km=1461.0)
+    layers = {"blancos": {"type": "FeatureCollection", "features": []}, "ferrocarril": {"type": "FeatureCollection", "features": []}, "rios": {"type": "FeatureCollection", "features": []}, "puertos": [],
+              "tramos": {"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"ruta": "RN 152", "corredor": "Ibicuy", "km": 163.3, "km_desde": 900.0, "tmda17": 197}, "geometry": {"type": "LineString", "coordinates": [[-65, -38], [-66, -38.5]]}}]}}
+    html = logistics_animation_html(y, cp, layers, waypoints_frame(), tmp_path / "v2.html").read_text(encoding="utf-8")
+    assert '"tmda17": 197' in html and "paintTramos" in html and "lyTramos" in html

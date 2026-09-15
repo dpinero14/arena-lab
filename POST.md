@@ -66,12 +66,44 @@ código a la vista.
    Acá la logística pesa lo mismo, pero en camión, y la arena regional se
    descartó por calidad.
 
+## La ruta paga el pozo (notebook 3)
+
+9. **En la RN 152 pasan más camiones de arena que vehículos había en 2017.**
+   El tránsito medio diario de 2017, el último publicado por tramo, era de
+   197 y 290 vehículos por día en dos tramos entre General Acha y Casa de
+   Piedra. En 2025 son 1.122 pasadas de camiones de arena por día: cuatro a
+   seis veces todo el tránsito de entonces. Desde 2021, 198 km de la RN 152
+   tienen más arena que tránsito tenían. En la RN 5, entre Luján y Santa
+   Rosa, la arena es del 7 al 34 % del tránsito de 2017.
+
+10. **Cada camión desgasta como 10.000 autos, y son 1.122 por día.** Ley de la
+    cuarta potencia, AASHO Road Test, Guía AASHTO 1993: 4,26 ejes
+    equivalentes por pasada de un semirremolque de 36 t contra 0,0004 de un
+    auto. Los de la arena pesan 53 a 55 t; es un piso. Doce millones de
+    autos por día, en desgaste, sobre una ruta que en 2017 veía 200.
+
+11. **El modelo y la prensa coinciden sin haberse mirado.** El repo da 1.122
+    pasadas diarias con el registro de fractura y 30 t por camión. La Pampa
+    cuenta 1.200 camiones por día para justificar una tasa vial (Río Negro,
+    30/7/2026); Puelches dice que pasó de 200 o 300 a entre 800 y 1.200 (La
+    Arena, 9/5/2026); La Nación cuenta 4.300 camiones de flota (11/9/2026)
+    contra los 3.400 en circulación del modelo.
+
+12. **Lo anunciado contra lo que cuesta.** Obras y concesiones de 2026 para
+    toda la ruta: del orden de 100 millones de dólares, una vez. El flete de
+    2025: 354 millones, cada año. La RN 5 se concesionó en agosto de 2026 a
+    20 años sin obras de ampliación, con calzada de 1961 de 3,30 a 3,65 m por
+    mano para camiones de 2,60 m.
+
 ## Lo que hay que decir sí o sí
 
 - El mapa señala dónde buscar, no si la arena sirve. No hay un solo ensayo de
   laboratorio argentino publicado como dato.
 - Los pesos son una opinión declarada y están en un solo archivo.
 - La red vial son rutas nacionales; las provinciales no están.
+- El tránsito de 2017 incluye a todos los vehículos y ya tenía arena; la
+  comparación es contra ese total. Toda la arena se supone por Entre Ríos,
+  cuando es el 75 %: las pasadas reales por Puelches son algo menores.
 
 ## Ángulos posibles
 
@@ -80,8 +112,11 @@ código a la vista.
 - El método que encuentra la arena mala: un mapa que "acierta" en Allen
   demuestra por qué el laboratorio es insustituible.
 - La ruta de la arena y los médanos de La Pampa.
+- La ruta paga el pozo: el costo que no está en los 97 dólares por tonelada.
 
 ## Links
 
 - Repo: https://github.com/dpinero14/arena-lab
 - Mapa interactivo: https://dpinero14.github.io/arena-lab/mapa_arena.html
+- Ruta animada: https://dpinero14.github.io/arena-lab/ruta_animada.html
+- Laboratorio: https://dpinero14.github.io/arena-lab/laboratorio_arena.html

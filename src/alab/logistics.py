@@ -104,7 +104,7 @@ def scenarios(tons_mt: tuple[float, ...] = (5.0, 8.0, 15.0), chains: list[Chain]
             ahorro_cap = t_cap * (base.usd_t_pozo - c.usd_t_pozo) / 1e6
             rows.append({"demanda_mt": mt, "cadena": c.nombre, "costo_musd": round(costo, 1), "ahorro_musd": round(ahorro, 1),
                          "ahorro_con_capacidad_musd": round(ahorro_cap, 1),
-                         "camiones_larga_distancia": round(camiones), "co2_kt": round(co2_kt, 1),
+                         "camiones_larga_distancia": round(camiones), "pasadas_dia_rutas_nacionales": round(2 * viajes_largos / dias), "co2_kt": round(co2_kt, 1),
                          "repago_tren_anios": round(inversion_musd / ahorro, 1) if ("Tren" in c.nombre and ahorro > 0) else None,
                          "repago_tren_con_capacidad_anios": round(inversion_musd / ahorro_cap, 1) if ("Tren" in c.nombre and ahorro_cap > 0) else None,
                          "cubre_pct": round(100 * min(1.0, c.capacidad_mt / mt), 0) if c.capacidad_mt else None})

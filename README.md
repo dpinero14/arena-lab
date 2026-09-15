@@ -18,8 +18,13 @@ El mapa interactivo, para recorrer los blancos, los depósitos conocidos, las
 rutas y las áreas donde se bombea: <https://dpinero14.github.io/arena-lab/mapa_arena.html>
 
 Y la ruta de la arena animada, año a año desde 2012: los camiones aparecen
-sobre la traza en proporción a la arena bombeada, con el flete del año y los
-dólares por kilómetro: <https://dpinero14.github.io/arena-lab/ruta_animada.html>
+sobre la traza en proporción a la arena bombeada, con el flete del año, las
+cinco cadenas alternativas y cada tramo de ruta pintado según cuánto pesa la
+arena en su tránsito: <https://dpinero14.github.io/arena-lab/ruta_animada.html>
+
+Y el laboratorio, para mover la demanda, la carga por camión y el reparto por
+cadena y ver qué pasa con el costo, los camiones, cada tramo de ruta, el
+desgaste y las emisiones: <https://dpinero14.github.io/arena-lab/laboratorio_arena.html>
 
 ## Qué hace
 
@@ -27,6 +32,7 @@ dólares por kilómetro: <https://dpinero14.github.io/arena-lab/ruta_animada.htm
 |---|---|
 | `01_donde_buscar_arena` | Baja y clasifica 21.546 polígonos del mapa geológico en cinco clases de blanco. Calcula un puntaje de 0 a 100 por polígono con la geología, la distancia al centro de la demanda, a la red vial y a los depósitos de arena conocidos. Lista los mejores blancos. Controla el puntaje en siete lugares con arena conocida. Traza la ruta real de los camiones de Ibicuy a Añelo y mide qué blancos quedan al costado. Dibuja el mapa. |
 | `02_la_logistica_de_la_arena` | Mide la cadena de hoy año a año: viajes, camiones, flete y dólares por kilómetro. Compara cinco cadenas con las mismas reglas: costo por tonelada, kilómetros en camión y emisiones. Corre escenarios de 5, 8 y 15 millones de toneladas con ahorro y repago del tren. Compara con Estados Unidos, Canadá y Rusia. Genera la ruta animada con capas y selector de cadena. |
+| `03_la_ruta_paga_el_pozo` | Parte la ruta en tramos con el tránsito medio diario de 2017 de IDE Transporte y cuenta, año a año, las pasadas de camiones de arena contra todo el tránsito que cada tramo tenía. Convierte pasadas en desgaste con la ley de la cuarta potencia. Mide cada cadena en camiones que dejan de pasar. Genera el laboratorio con perillas. |
 
 Las reglas y los pesos están en `src/alab/targets.py` y `src/alab/score.py`,
 en un solo lugar cada uno, para que se puedan leer y discutir. Todo está
@@ -107,6 +113,55 @@ en `animation.py` y en la página animada, que además supone toda la arena
 nacional por la ruta de Entre Ríos: hasta 2020 una parte venía de Río Negro y
 Chubut, con viajes más cortos.
 
+## La ruta paga el pozo
+
+El costo de la arena que se publica, 97 dólares por tonelada hasta el pozo,
+no incluye la ruta. IDE Transporte publica el tránsito medio diario de 2017
+por tramo de ruta nacional, el último por tramo; el registro de fractura da
+las toneladas por año; con 30 toneladas por viaje, 300 días y la vuelta
+vacía, cada tonelada se convierte en pasadas de camión por cada tramo.
+
+**En la RN 152 pasan más camiones de arena que vehículos había en 2017.** En
+2025 son 1.122 pasadas por día. Entre General Acha y Casa de Piedra hay dos
+tramos que en 2017 tenían 197 y 290 vehículos por día, autos incluidos: la
+arena sola es cuatro a seis veces todo ese tránsito. Desde 2021, 198 km de la
+RN 152 tienen más camiones de arena por día que tránsito total tenían en
+2017; el primer tramo se pasó en 2018. En la RN 5 y la RN 35 la arena pesa
+entre el 7 y el 34 % del tránsito de 2017; en la RN 151, entre el 14 y el
+23 %.
+
+| Ruta | km medidos | Tránsito 2017, veh/día | Pasadas de arena 2025 | % del tránsito 2017 |
+|---|---|---|---|---|
+| RN 12 | 100 | 19.700 | 1.122 | 6 |
+| RN 5 | 540 | 3.350 a 15.560 | 1.122 | 7 a 34 |
+| RN 35 | 74 | 3.266 a 5.200 | 1.122 | 22 a 34 |
+| RN 152 | 286 | 197 a 1.960 | 1.122 | 57 a 570 |
+| RN 151 | 154 | 4.900 a 7.950 | 1.122 | 14 a 23 |
+
+![La ruta tramo por tramo](docs/figures/presion_ruta.png)
+
+El modelo no usa la prensa y da 1.122 pasadas diarias. La Pampa cuenta 1.200
+camiones por día para fundamentar una tasa vial, y en Puelches dicen que la
+RN 152 pasó de 200 o 300 camiones a entre 800 y 1.200. Coinciden.
+
+**Cada camión que pasa desgasta como 10.000 autos.** El AASHO Road Test midió
+que el daño al pavimento crece con la cuarta potencia de la carga por eje.
+Con la Guía AASHTO 1993, un semirremolque de cinco ejes y 36 toneladas son
+4,26 ejes equivalentes por pasada y un auto 0,0004: 10.650 autos por camión.
+Las 1.122 pasadas de 2025 desgastan cada tramo como 12 millones de autos por
+día. Los camiones de la arena pesan 53 a 55 toneladas y los bitrenes 75, así
+que es un piso. Con 8 millones de toneladas, la cifra de 2027, serían 1.778
+pasadas: nueve veces el tránsito de 2017 en el peor tramo.
+
+**Las cadenas, medidas en camiones que dejan de pasar.** El tren y la hidrovía
+sacan de la ruta larga a todos; la barcaza con camión los saca de la RN 5 y la
+RN 152 y los pone en la RN 22, que cerca de Neuquén ya tenía tránsito alto.
+Del otro lado, lo anunciado en 2026 para toda la ruta: bacheo y concesión con
+peaje en Entre Ríos, tasa vial en La Pampa, 305 km concesionados en Río Negro
+con 60 millones de dólares, la RN 5 concesionada sin obras de ampliación y el
+bypass de Añelo. Del orden de 100 millones de dólares, una vez, contra 354
+millones por año de flete.
+
 ## La logística de la arena: cinco caminos con las mismas reglas
 
 Cada cadena es una lista de tramos con su modo y sus kilómetros, más un costo
@@ -170,7 +225,7 @@ cd arena-lab
 make setup                          # venv, geopandas, folium, kernel de Jupyter
 make test                           # pytest, con polígonos sintéticos
 make data                           # ~320 MB: SEGEMAR por WFS, rutas, registro de fractura y producción
-make notebooks                      # unos 7 minutos
+make notebooks                      # unos 10 minutos
 ```
 
 En Windows sin GNU make: `scripts\setup.ps1`, `scripts\test.ps1`,
@@ -188,11 +243,13 @@ src/alab/
   route.py       la ruta de la arena de Ibicuy a Añelo, por OSRM, con puntos de paso de la prensa
   animation.py   la ruta animada v1: camiones por año y flete por kilómetro, con supuestos declarados
   logistics.py   cadenas alternativas: tramos, costos por tonelada, emisiones, escenarios y benchmarks
-  animation2.py  la ruta animada v2: capas, selector de cadena, contexto por año y cierre
+  animation2.py  la ruta animada v2: capas, selector de cadena, contexto por año, presión por tramo y cierre
+  roads.py       la ruta por tramos: tránsito 2017, pasadas de arena por día, cuarta potencia
+  lab.py         el laboratorio con perillas: demanda, carga por camión y reparto por cadena
   maps.py        mapa interactivo (folium) y figuras
-notebooks/       01_donde_buscar_arena, 02_la_logistica_de_la_arena
-tests/           pytest con polígonos sintéticos
-docs/            mapa_arena.html y figuras
+notebooks/       01_donde_buscar_arena, 02_la_logistica_de_la_arena, 03_la_ruta_paga_el_pozo
+tests/           pytest con polígonos y tramos sintéticos
+docs/            mapa_arena.html, ruta_animada.html, laboratorio_arena.html y figuras
 data/raw/        vacío y en .gitignore; ver data/README.md
 ```
 
@@ -212,6 +269,13 @@ data/raw/        vacío y en .gitignore; ver data/README.md
   idénticas, y las cadenas por agua todavía no tienen inversión estimada. Los
   factores de emisión son europeos de 2018; la flota argentina probablemente
   emite más. Las trazas de barcaza y tren son puntos de paso, no rutas exactas.
+- El tránsito por tramo es de 2017, el último publicado, e incluye a todos los
+  vehículos; la comparación es contra ese total, no contra un tránsito "sin
+  arena". Toda la arena nacional se supone por la ruta de Entre Ríos, cuando
+  desde 2024 es el 75 %. Los tramos de IDE Transporte traen calzadas dobles
+  y, en la RN 22, varios tramos superpuestos: se toma el de más tránsito, así
+  que la presión sobre la RN 22 es un piso. Las rutas provinciales por donde
+  también pasa la arena, RP 45, RP 20 y RP 7, no tienen tránsito publicado.
 
 ## Próximos pasos
 
@@ -226,7 +290,12 @@ data/raw/        vacío y en .gitignore; ver data/README.md
 
 - SEGEMAR, SIGAM, mapa geológico 1:250.000, depósitos de minerales
   industriales y geoquímica: <https://sigam.segemar.gov.ar>, CC-BY 4.0, por WFS.
-- IDE Transporte, tránsito medio diario de rutas nacionales: datos.gob.ar.
+- IDE Transporte, tránsito medio diario de rutas nacionales 2017 por tramo:
+  datos.gob.ar. Desgaste: American Trucking Associations, "Analysis of car and
+  truck pavement impacts" (2022), sobre la Guía AASHTO 1993.
+- Estado de las rutas y obras anunciadas: La Nación (Diego Cabot y Paula
+  Urien) reproducido por Diario Neuquino, 11/9/2026; Más Energía, 7/9/2026;
+  Diario Río Negro, 30/7/2026; La Arena, 9/5/2026.
 - Ruta de la arena: traza calculada con OSRM sobre OpenStreetMap (ODbL), con
   los puntos de paso que describen Diario Neuquino y LM Neuquén en septiembre
   de 2026.
