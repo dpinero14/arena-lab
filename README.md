@@ -26,6 +26,7 @@ dólares por kilómetro: <https://dpinero14.github.io/arena-lab/ruta_animada.htm
 | Notebook | Qué hace |
 |---|---|
 | `01_donde_buscar_arena` | Baja y clasifica 21.546 polígonos del mapa geológico en cinco clases de blanco. Calcula un puntaje de 0 a 100 por polígono con la geología, la distancia al centro de la demanda, a la red vial y a los depósitos de arena conocidos. Lista los mejores blancos. Controla el puntaje en siete lugares con arena conocida. Traza la ruta real de los camiones de Ibicuy a Añelo y mide qué blancos quedan al costado. Dibuja el mapa. |
+| `02_la_logistica_de_la_arena` | Mide la cadena de hoy año a año: viajes, camiones, flete y dólares por kilómetro. Compara cinco cadenas con las mismas reglas: costo por tonelada, kilómetros en camión y emisiones. Corre escenarios de 5, 8 y 15 millones de toneladas con ahorro y repago del tren. Compara con Estados Unidos, Canadá y Rusia. Genera la ruta animada con capas y selector de cadena. |
 
 Las reglas y los pesos están en `src/alab/targets.py` y `src/alab/score.py`,
 en un solo lugar cada uno, para que se puedan leer y discutir. Todo está
@@ -106,6 +107,43 @@ en `animation.py` y en la página animada, que además supone toda la arena
 nacional por la ruta de Entre Ríos: hasta 2020 una parte venía de Río Negro y
 Chubut, con viajes más cortos.
 
+## La logística de la arena: cinco caminos con las mismas reglas
+
+Cada cadena es una lista de tramos con su modo y sus kilómetros, más un costo
+por tonelada puesta en el pozo tomado de fuentes de 2026, y las emisiones con
+los factores europeos de 2018 pozo a rueda, los únicos con método comparable
+para camión, tren, río y mar. Todo declarado en `src/alab/logistics.py`.
+
+| Cadena | USD por tonelada al pozo | km en camión | kg CO₂e por tonelada | Estado |
+|---|---|---|---|---|
+| Camión directo, hoy | 97 | 1.461 | 200 | existe: 4.300 camiones, 70 a 75 h por tramo |
+| Barcaza a Bahía Blanca y camión | 63 | 620 | 100 | en construcción: terminal de PTP en Ibicuy, 12 MUSD |
+| Barcaza, Tren Norpatagónico y camión | 35 | 50 | 38 | no existe: el tren mueve menos de 100.000 t, 37 % de la vía en buen estado, faltan 83 km |
+| Hidrovía patagónica por el río Negro | 48 | 50 | 48 | en estudio: dragado, terminales y cabotaje pendientes |
+| Arena cercana de Neuquén | 30 | 60 | 8 | en prueba: 20.000 t por mes, calidad por confirmar |
+
+**Con 5 millones de toneladas, la diferencia entre el camión y el tren son
+309 millones de dólares por año.** El tren pagaría sus 500 millones en menos
+de dos años si pudiera llevarlo todo; con la capacidad de 1,5 millones que se
+le atribuye al primer año, el ahorro baja a 93 millones y el repago a cinco
+años y medio. A 8 millones de toneladas, la cifra que se proyecta para 2027,
+el camión directo cuesta 776 millones por año y pone 5.300 camiones en la
+ruta. Las emisiones del camión son 1.000 kilotoneladas de CO₂e por año a 5
+millones; el tren las baja a 190.
+
+**Cómo lo resolvieron otros.** Estados Unidos pasó por dos etapas en diez
+años: arena de calidad a 2.000 km en tren, con la logística en tres cuartos
+del precio, y después arena regional a 50 km y una cinta transportadora de 68
+km. Canadá mezcla arena importada por tren con local sin tren. Rusia no tiene
+arena apta, usa cerámica y la lleva en tren a depósitos que carga antes del
+invierno. Argentina está en la primera etapa con el modo equivocado: la misma
+proporción de logística en el precio que tenía Estados Unidos, pero en camión.
+
+La ruta animada, versión 2, con los blancos de arena debajo de la traza, el
+ferrocarril y su estado, los ríos, los puertos y un selector de cadena que
+cambia las unidades que circulan, el costo y las emisiones de cada año:
+<https://dpinero14.github.io/arena-lab/ruta_animada.html>
+
 ## Cómo se explora arena de fractura, en dos párrafos
 
 La arena que sirve es cuarzosa, redonda y resistente. La norma API 19C pide
@@ -148,9 +186,11 @@ src/alab/
   validate.py    control contra lugares con arena conocida
   demand.py      arena bombeada por área, con coordenadas de pozo
   route.py       la ruta de la arena de Ibicuy a Añelo, por OSRM, con puntos de paso de la prensa
-  animation.py   la ruta animada: camiones por año y flete por kilómetro, con supuestos declarados
+  animation.py   la ruta animada v1: camiones por año y flete por kilómetro, con supuestos declarados
+  logistics.py   cadenas alternativas: tramos, costos por tonelada, emisiones, escenarios y benchmarks
+  animation2.py  la ruta animada v2: capas, selector de cadena, contexto por año y cierre
   maps.py        mapa interactivo (folium) y figuras
-notebooks/       01_donde_buscar_arena
+notebooks/       01_donde_buscar_arena, 02_la_logistica_de_la_arena
 tests/           pytest con polígonos sintéticos
 docs/            mapa_arena.html y figuras
 data/raw/        vacío y en .gitignore; ver data/README.md
@@ -168,6 +208,10 @@ data/raw/        vacío y en .gitignore; ver data/README.md
 - La red vial son rutas nacionales; las provinciales, como la RP 7 y la RP 17
   que llegan a Añelo, no están.
 - Los pesos son una opinión declarada. Cambiarlos cambia el mapa.
+- Los costos por tonelada de las cadenas vienen de tres fuentes con bases no
+  idénticas, y las cadenas por agua todavía no tienen inversión estimada. Los
+  factores de emisión son europeos de 2018; la flota argentina probablemente
+  emite más. Las trazas de barcaza y tren son puntos de paso, no rutas exactas.
 
 ## Próximos pasos
 
@@ -186,6 +230,11 @@ data/raw/        vacío y en .gitignore; ver data/README.md
 - Ruta de la arena: traza calculada con OSRM sobre OpenStreetMap (ODbL), con
   los puntos de paso que describen Diario Neuquino y LM Neuquén en septiembre
   de 2026.
+- Ferrocarril, estaciones y puertos: IDE Transporte, por WFS. Ríos: IGN,
+  capa de aguas continentales perennes, por WFS.
+- Costos de las cadenas: Infobae 15/8/2026, El Cronista 4/9/2026, GlobalPorts
+  15/7/2026, Bloomberg Línea 11/9/2026. Emisiones: CE Delft y Fraunhofer ISI
+  para la Agencia Europea de Medio Ambiente, 2021, datos 2018.
 - Secretaría de Energía, registro de fractura y producción no convencional:
   <https://datos.energia.gob.ar>, CC-BY 4.0.
 - Lugares con arena conocida: prensa citada en `src/alab/validate.py`.

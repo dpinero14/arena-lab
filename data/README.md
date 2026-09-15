@@ -12,6 +12,10 @@ Nada de esta carpeta se versiona. `python scripts/download_data.py` baja todo a
 | `fractura_adjunto_iv.csv` | Secretaría de Energía, datos.energia.gob.ar | CC-BY 4.0 | Registro de fractura por pozo: arena nacional e importada, agua, etapas, fechas |
 | `produccion_no_convencional.csv` | Secretaría de Energía, datos.energia.gob.ar | CC-BY 4.0 | Producción mensual por pozo; se usa por las coordenadas de cada pozo |
 | `ruta_arena_osrm.json` | OSRM público sobre OpenStreetMap | ODbL | Traza de la ruta de la arena entre los puntos de paso; el notebook la baja si falta |
+| `ruta_bahiablanca_anelo_osrm.json` | OSRM público | ODbL | Tramo en camión de Bahía Blanca a Añelo por la RN 22, para las cadenas por barcaza |
+| `ide_ferrocarril.geojson` | IDE Transporte, capa `idera:Ferrocarril` | datos.gob.ar | 318 tramos de vía con línea, operador, estado y trocha |
+| `ide_puertos.geojson` | IDE Transporte, capa `puertos_ont_a_view` | datos.gob.ar | 104 puertos; se usan Ibicuy, Bahía Blanca, Rosales y San Antonio Este |
+| `ign_rios.geojson` | IGN, capa `lineas_de_aguas_continentales_perenne` filtrada por nombre | IGN | Ríos Paraná, Negro, Limay y Neuquén |
 
 Descarga verificada el 15 de septiembre de 2026. El WFS de SEGEMAR está en
 `https://sigam.segemar.gov.ar/geoserver217/ows`; la licencia CC-BY 4.0 está

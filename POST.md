@@ -44,6 +44,28 @@ código a la vista.
    desde 1.400 km pasan por encima de arena durante 300 km. Que sirva, lo
    dice el laboratorio. Que nadie la ensayó en público, lo dice el mapa.
 
+## La logística, medida (notebook 2)
+
+6. **El camión de hoy cuesta 97 dólares por tonelada hasta el pozo y emite
+   200 kg de CO₂e.** Barcaza y tren costarían 35 y emitirían 38. Con 5
+   millones de toneladas, la diferencia son 309 millones de dólares por año:
+   el tren pagaría sus 500 millones en menos de dos años si pudiera llevarlo
+   todo, en cinco y medio con la capacidad que se le atribuye al primer año.
+   A 8 millones de toneladas, el camión directo cuesta 776 millones y pone
+   5.300 camiones en la ruta.
+
+7. **Cada alternativa tiene un "pero" verificable.** El tren: menos de
+   100.000 toneladas hoy, 37 % de la vía en buen estado, 83 km que faltan,
+   sin licitación. El río: dragado, terminales, cabotaje, y San Antonio a 180
+   km del río. La arena cercana: 20.000 toneladas por mes y la calidad sin
+   ensayos públicos.
+
+8. **Argentina está en la etapa que Estados Unidos dejó en 2017, con el modo
+   equivocado.** Allá la arena de calidad viajaba 2.000 km en tren con la
+   logística en tres cuartos del precio, hasta que apareció la arena regional.
+   Acá la logística pesa lo mismo, pero en camión, y la arena regional se
+   descartó por calidad.
+
 ## Lo que hay que decir sí o sí
 
 - El mapa señala dónde buscar, no si la arena sirve. No hay un solo ensayo de

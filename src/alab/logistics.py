@@ -1,0 +1,123 @@
+"""Cadenas logísticas de la arena: cuánto cuesta cada tonelada por cada camino, y cuánto emite.
+
+Cada cadena es una lista de tramos (modo, km) más un costo por tonelada hasta
+el pozo. Donde la fuente da el costo de la cadena completa se usa ese número;
+donde no, se deriva de los tramos con los costos unitarios de `MODES`. Las
+emisiones salen de los factores europeos de 2018, pozo a rueda, que son los
+únicos publicados con método comparable para los cuatro modos. Todo está a la
+vista para discutirlo.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+import pandas as pd
+
+# Factores de emisión pozo a rueda, EU-27 2018, gCO2e por tonelada-km.
+# Fuente: CE Delft y Fraunhofer ISI para la Agencia Europea de Medio Ambiente,
+# "Methodology for GHG Efficiency of Transport Modes" (2021), tablas 3.x, 5.x, 6.4 y 7.5.
+EMISIONES_G_TKM = {"camion": 137.0, "tren": 24.0, "fluvial": 33.4, "maritimo": 6.6}
+
+# Costos unitarios de referencia, USD por tonelada-km, derivados de cifras publicadas en 2026.
+MODES = {
+    "camion": {"usd_tkm": 70.0 / 1461.0, "fuente": "flete Ibicuy-Añelo 70 USD/t (Infobae, 15/8/2026) sobre 1.461 km"},
+    "fluvial": {"usd_tkm": 16.9 / 1279.0, "fuente": "Ibicuy-Bahía Blanca por agua 16,9 USD/t sobre 1.279 km (El Cronista, 4/9/2026)"},
+    "maritimo": {"usd_tkm": 16.9 / 1279.0, "fuente": "mismo tramo por agua; la fuente no separa río de mar"},
+    "tren": {"usd_tkm": 15.9 / 665.0, "fuente": "derivado: 35,2 total de agua+tren+camión menos 16,9 de agua y 2,4 de última milla (El Cronista, 4/9/2026)"},
+}
+
+ULTIMA_MILLA_USD_T = 27.0     # de la planta cercana al pozo, Infobae 15/8/2026; igual en todas las cadenas
+INVERSION_TREN_MUSD = 500.0   # Tren Norpatagónico, estimación original (Bloomberg Línea, 11/9/2026)
+
+
+@dataclass
+class Leg:
+    modo: str
+    km: float
+
+
+@dataclass
+class Chain:
+    nombre: str
+    legs: list[Leg]
+    usd_t_pozo: float             # costo por tonelada puesta en el pozo, transporte incluido
+    estado: str                   # qué existe hoy
+    fuente: str
+    limite: str = ""
+    capacidad_mt: float | None = None   # toneladas por año que podría mover hoy o al inicio, si se sabe
+
+    @property
+    def km_camion(self) -> float:
+        return sum(l.km for l in self.legs if l.modo == "camion")
+
+    @property
+    def km_total(self) -> float:
+        return sum(l.km for l in self.legs)
+
+    def kg_co2e_t(self, f: dict = EMISIONES_G_TKM) -> float:
+        return sum(l.km * f[l.modo] for l in self.legs) / 1000.0
+
+
+CHAINS: list[Chain] = [
+    Chain("camión directo, hoy", [Leg("camion", 1461)], 70.0 + ULTIMA_MILLA_USD_T,
+          "existe: 4.300 camiones, 70 a 75 h por tramo", "Infobae 15/8/2026; Diario Neuquino 11/9/2026",
+          "rutas al límite; 700 a 800 camiones más por año si la actividad se duplica"),
+    Chain("barcaza a Bahía Blanca y camión", [Leg("fluvial", 250), Leg("maritimo", 1029), Leg("camion", 620)], 62.7,
+          "en construcción: terminal de PTP en Ibicuy, 12 MUSD, permiso 2024", "El Cronista 4/9/2026; Diario Neuquino 29/8/2026",
+          "falta terminal de arena en Bahía Blanca; 620 km de camión por la RN 22"),
+    Chain("barcaza, Tren Norpatagónico y camión", [Leg("fluvial", 250), Leg("maritimo", 1029), Leg("tren", 665), Leg("camion", 50)], 35.2,
+          "no existe: el tren mueve <100 kt/año, 37 % de la vía en buen estado, 10 km/h; faltan 83 km hasta Añelo", "El Cronista 4/9/2026; Bloomberg Línea 11/9/2026",
+          "500 MUSD y una licitación que no está; 1,5 Mt el primer año, 6 Mt de potencial", capacidad_mt=1.5),
+    Chain("hidrovía patagónica por el río Negro", [Leg("fluvial", 250), Leg("maritimo", 1330), Leg("fluvial", 720), Leg("camion", 50)], 48.0,
+          "en estudio: dos informes técnicos, el tercero con inversiones pendiente", "GlobalPorts 15/7/2026",
+          "dragado, terminales, reforma del cabotaje; el puerto de San Antonio queda a 180 km del río"),
+    Chain("arena cercana de Neuquén", [Leg("camion", 60)], 60 * MODES["camion"]["usd_tkm"] + ULTIMA_MILLA_USD_T,
+          "en prueba: <20.000 t por mes, YPF y Vista", "Vaca Muerta News 2/5/2026; Mejor Energía 8/9/2026",
+          "calidad por confirmar en pozo; volumen chico; sin ensayos públicos", capacidad_mt=0.24),
+]
+
+
+def chains_table(chains: list[Chain] = CHAINS) -> pd.DataFrame:
+    rows = []
+    for c in chains:
+        rows.append({"cadena": c.nombre, "usd_t_pozo": round(c.usd_t_pozo, 1), "km_total": round(c.km_total), "km_camion": round(c.km_camion),
+                     "kg_co2e_t": round(c.kg_co2e_t(), 1), "estado": c.estado, "limite": c.limite, "fuente": c.fuente})
+    return pd.DataFrame(rows)
+
+
+def scenarios(tons_mt: tuple[float, ...] = (5.0, 8.0, 15.0), chains: list[Chain] = CHAINS, t_por_camion: float = 30.0, dias: int = 300, ciclo: float = 6.0, inversion_musd: float = INVERSION_TREN_MUSD) -> pd.DataFrame:
+    """Por escenario de demanda y cadena: costo anual, ahorro contra el camión, camiones en circulación, CO2 y repago."""
+    base = chains[0]
+    rows = []
+    for mt in tons_mt:
+        t = mt * 1e6
+        for c in chains:
+            costo = t * c.usd_t_pozo / 1e6
+            ahorro = t * (base.usd_t_pozo - c.usd_t_pozo) / 1e6
+            # camiones de larga distancia: el ciclo se acorta en proporción a los km que quedan en camión
+            viajes_largos = t / t_por_camion if c.km_camion > 200 else 0.0
+            camiones = viajes_largos / dias * ciclo * (c.km_camion / base.km_camion)
+            co2_kt = t * c.kg_co2e_t() / 1e6
+            # ahorro alcanzable con la capacidad que la cadena tiene hoy o al inicio, si se conoce
+            t_cap = min(t, c.capacidad_mt * 1e6) if c.capacidad_mt else t
+            ahorro_cap = t_cap * (base.usd_t_pozo - c.usd_t_pozo) / 1e6
+            rows.append({"demanda_mt": mt, "cadena": c.nombre, "costo_musd": round(costo, 1), "ahorro_musd": round(ahorro, 1),
+                         "ahorro_con_capacidad_musd": round(ahorro_cap, 1),
+                         "camiones_larga_distancia": round(camiones), "co2_kt": round(co2_kt, 1),
+                         "repago_tren_anios": round(inversion_musd / ahorro, 1) if ("Tren" in c.nombre and ahorro > 0) else None,
+                         "repago_tren_con_capacidad_anios": round(inversion_musd / ahorro_cap, 1) if ("Tren" in c.nombre and ahorro_cap > 0) else None,
+                         "cubre_pct": round(100 * min(1.0, c.capacidad_mt / mt), 0) if c.capacidad_mt else None})
+    return pd.DataFrame(rows)
+
+
+# Cómo lo resolvieron otros: distancia, modo y participación de la logística en el precio. Verificado 14/9/2026.
+BENCHMARKS = pd.DataFrame([
+    {"pais": "Estados Unidos, hasta 2017", "arena": "Northern White, Wisconsin", "distancia_km": 2000, "modo": "tren unitario y camión", "logistica_pct": "75 %", "que_cambio": "apareció arena regional en el Permian; el flete era la mitad del costo", "fuente": "PLG Consulting 2018; AOGR 12/2017"},
+    {"pais": "Estados Unidos, hoy", "arena": "arena de duna del Permian", "distancia_km": 50, "modo": "camión, cajas y silos; cinta de 68 km", "logistica_pct": "la menor", "que_cambio": "60 % menos por tonelada; Dune Express de 400 MUSD mueve 13 Mt/año sin camiones", "fuente": "JPT 12/2018; JPT 2024"},
+    {"pais": "Canadá", "arena": "Wisconsin y Peace River", "distancia_km": 1500, "modo": "tren a terminales y camión; arena local sin tren", "logistica_pct": "sin dato", "que_cambio": "mezcla de importada por tren y local cercana", "fuente": "Source Energy Services"},
+    {"pais": "Rusia", "arena": "cerámica de los Urales", "distancia_km": 2000, "modo": "tren a depósitos en Siberia, camión y caminos de invierno", "logistica_pct": "sin dato", "que_cambio": "sin arena apta: 99 % cerámica; depósitos cargados antes del invierno", "fuente": "ROGTEC"},
+    {"pais": "Argentina, hoy", "arena": "Ibicuy, Entre Ríos", "distancia_km": 1461, "modo": "camión", "logistica_pct": "más del 70 %", "que_cambio": "la arena cercana perdió por calidad; el tren no llega y el río está en estudio", "fuente": "Infobae 8/2026; este repo"},
+])
+
+__all__ = ["EMISIONES_G_TKM", "MODES", "ULTIMA_MILLA_USD_T", "INVERSION_TREN_MUSD", "Leg", "Chain", "CHAINS", "chains_table", "scenarios", "BENCHMARKS"]
