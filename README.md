@@ -31,7 +31,7 @@ desgaste y las emisiones: <https://dpinero14.github.io/arena-lab/laboratorio_are
 | Notebook | Qué hace |
 |---|---|
 | `01_donde_buscar_arena` | Baja y clasifica 21.546 polígonos del mapa geológico en cinco clases de blanco. Calcula un puntaje de 0 a 100 por polígono con la geología, la distancia al centro de la demanda, a la red vial y a los depósitos de arena conocidos. Lista los mejores blancos. Controla el puntaje en siete lugares con arena conocida. Traza la ruta real de los camiones de Ibicuy a Añelo y mide qué blancos quedan al costado. Dibuja el mapa. |
-| `02_la_logistica_de_la_arena` | Mide la cadena de hoy año a año: viajes, camiones, flete y dólares por kilómetro. Compara cinco cadenas con las mismas reglas: costo por tonelada, kilómetros en camión y emisiones. Corre escenarios de 5, 8 y 15 millones de toneladas con ahorro y repago del tren. Compara con Estados Unidos, Canadá y Rusia. Genera la ruta animada con capas y selector de cadena. |
+| `02_la_logistica_de_la_arena` | Mide la cadena de hoy año a año: viajes, camiones, flete y dólares por kilómetro. Compara seis cadenas con las mismas reglas, un arenoducto hipotético incluido: costo por tonelada, kilómetros en camión y emisiones. Corre escenarios de 5, 8 y 15 millones de toneladas con ahorro y repago del tren. Compara con Estados Unidos, Canadá y Rusia. Genera la ruta animada con capas y selector de cadena. |
 | `03_la_ruta_paga_el_pozo` | Parte la ruta en tramos con el tránsito medio diario de 2017 de IDE Transporte y cuenta, año a año, las pasadas de camiones de arena contra todo el tránsito que cada tramo tenía. Convierte pasadas en desgaste con la ley de la cuarta potencia. Mide cada cadena en camiones que dejan de pasar. Genera el laboratorio con perillas. |
 
 Las reglas y los pesos están en `src/alab/targets.py` y `src/alab/score.py`,
@@ -162,7 +162,7 @@ con 60 millones de dólares, la RN 5 concesionada sin obras de ampliación y el
 bypass de Añelo. Del orden de 100 millones de dólares, una vez, contra 354
 millones por año de flete.
 
-## La logística de la arena: cinco caminos con las mismas reglas
+## La logística de la arena: seis caminos con las mismas reglas
 
 Cada cadena es una lista de tramos con su modo y sus kilómetros, más un costo
 por tonelada puesta en el pozo tomado de fuentes de 2026, y las emisiones con
@@ -176,6 +176,29 @@ para camión, tren, río y mar. Todo declarado en `src/alab/logistics.py`.
 | Barcaza, Tren Norpatagónico y camión | 35 | 50 | 38 | no existe: el tren mueve menos de 100.000 t, 37 % de la vía en buen estado, faltan 83 km |
 | Hidrovía patagónica por el río Negro | 48 | 50 | 48 | en estudio: dragado, terminales y cabotaje pendientes |
 | Arena cercana de Neuquén | 30 | 60 | 8 | en prueba: 20.000 t por mes, calidad por confirmar |
+| Arenoducto, hipotético | 69 a 5 Mt, 62 a 8 Mt | 50 | 33 | no existe: pulpa por caño, supuestos declarados abajo |
+
+**El arenoducto: mover la arena como pulpa por un caño.** No es ciencia
+ficción, es un mineraloducto: Minas-Rio lleva 26,5 millones de toneladas de
+hierro por año a lo largo de 529 km en Brasil; OCP mueve fosfato 187 km en
+Marruecos con 400 millones de euros de inversión y 90 % menos de costo de
+transporte; Alumbrera operó 316 km entre Catamarca y Tucumán de 1997 a 2018;
+la Unión Soviética movió piedra en cápsulas neumáticas por un tubo de 49 km
+en 1980; y el Dune Express lleva 13 millones de toneladas de arena de
+fractura por año en una cinta cerrada de 68 km en el Permian. Nadie publicó
+un precio para uno de arena a 1.100 km, así que los supuestos están en
+`ARENODUCTO`, en `logistics.py`: traza por el cruce de Zárate, el corredor de
+la RN 5 y la traza del gasoducto Perito Moreno de Salliqueló a Tratayén;
+2.000 millones de dólares de capex al costo por km de OCP, amortizados a 20
+años sin interés en lo que se bombea; 0,02 dólares por tonelada-km de
+operación; media tonelada de agua por tonelada de arena, 2,5 hm³ por año a 5
+millones de toneladas; y el factor de emisión del tren como cota para el
+bombeo. A 5 millones de toneladas da 69 dólares por tonelada y repaga en 14
+años; a 8, 62 dólares y 7 años. Con el capex por km del gasoducto serían
+4.400 millones y 93 dólares, casi el camión. A esta distancia pierde con el
+tren; ganaría con arena a 100 km, que es exactamente lo que hizo el Permian.
+La pulpa llega húmeda, y en el Permian ya se bombea arena húmeda sin secar,
+con 5 a 10 dólares menos por tonelada y mucho menos polvo de sílice.
 
 **Con 5 millones de toneladas, la diferencia entre el camión y el tren son
 309 millones de dólares por año.** El tren pagaría sus 500 millones en menos
@@ -242,7 +265,7 @@ src/alab/
   demand.py      arena bombeada por área, con coordenadas de pozo
   route.py       la ruta de la arena de Ibicuy a Añelo, por OSRM, con puntos de paso de la prensa
   animation.py   la ruta animada v1: camiones por año y flete por kilómetro, con supuestos declarados
-  logistics.py   cadenas alternativas: tramos, costos por tonelada, emisiones, escenarios y benchmarks
+  logistics.py   cadenas alternativas: tramos, costos por tonelada, capex repartido en el volumen, emisiones, escenarios y benchmarks
   animation2.py  la ruta animada v2: capas, selector de cadena, contexto por año, presión por tramo y cierre
   roads.py       la ruta por tramos: tránsito 2017, pasadas de arena por día, cuarta potencia
   lab.py         el laboratorio con perillas: demanda, carga por camión y reparto por cadena
@@ -269,6 +292,10 @@ data/raw/        vacío y en .gitignore; ver data/README.md
   idénticas, y las cadenas por agua todavía no tienen inversión estimada. Los
   factores de emisión son europeos de 2018; la flota argentina probablemente
   emite más. Las trazas de barcaza y tren son puntos de paso, no rutas exactas.
+- El arenoducto es un experimento con supuestos declarados: el capex por km
+  de un mineraloducto de fosfato en Marruecos, la operación de la literatura y
+  el factor de emisión del tren como cota. Cambiar el capex cambia el
+  veredicto, por eso van dos versiones.
 - El tránsito por tramo es de 2017, el último publicado, e incluye a todos los
   vehículos; la comparación es contra ese total, no contra un tránsito "sin
   arena". Toda la arena nacional se supone por la ruta de Entre Ríos, cuando
@@ -302,7 +329,11 @@ data/raw/        vacío y en .gitignore; ver data/README.md
 - Ferrocarril, estaciones y puertos: IDE Transporte, por WFS. Ríos: IGN,
   capa de aguas continentales perennes, por WFS.
 - Costos de las cadenas: Infobae 15/8/2026, El Cronista 4/9/2026, GlobalPorts
-  15/7/2026, Bloomberg Línea 11/9/2026. Emisiones: CE Delft y Fraunhofer ISI
+  15/7/2026, Bloomberg Línea 11/9/2026. Arenoducto: Minas-Rio (Mining
+  Technology), OCP Khouribga a Jorf Lasfar (Energy Efficiency Magazine
+  1/2022, Paterson & Cooke), mineraloducto de Alumbrera (HCDN), cápsulas
+  LILO-2 (historia de los capsule pipelines), gasoducto Perito Moreno
+  (Wikipedia), wet sand (AOGR). Emisiones: CE Delft y Fraunhofer ISI
   para la Agencia Europea de Medio Ambiente, 2021, datos 2018.
 - Secretaría de Energía, registro de fractura y producción no convencional:
   <https://datos.energia.gob.ar>, CC-BY 4.0.

@@ -31,6 +31,8 @@ TREN_BB_ANELO = [(-62.30, -38.78), (-62.90, -38.85), (-64.00, -38.99), (-65.65, 
 TREN_NUEVO_DESDE = (-68.16, -38.72)   # Contraalmirante Cordero: desde acá los 83 km que faltan
 CAMION_ULTIMA_MILLA = [(-68.79, -38.35), (-68.66, -38.30), (-68.60, -38.22)]
 CAMION_CERCANA = [(-68.43, -39.02), (-68.55, -38.80), (-68.70, -38.55), (-68.79, -38.35)]
+# arenoducto hipotético: cruce del Paraná en Zárate, corredor de la RN 5 hasta Salliqueló y la traza del gasoducto Perito Moreno hasta Tratayén
+ARENODUCTO_TRAZA = [(-59.17, -33.74), (-59.03, -34.10), (-59.60, -34.60), (-60.49, -35.12), (-61.97, -35.81), (-62.96, -36.75), (-64.60, -37.05), (-66.30, -37.55), (-67.90, -38.10), (-68.73, -38.38), (-68.79, -38.35)]
 
 # Contexto por año: solo hechos verificados o que salen de los propios datos.
 CONTEXTO = {
@@ -53,6 +55,7 @@ UNIDADES = {
     "fluvial": {"t": 2400.0, "km_dia": 300.0, "por_punto": 1, "color": "#3b8ed0", "nombre": "barcaza (80 camiones)"},
     "maritimo": {"t": 2400.0, "km_dia": 400.0, "por_punto": 1, "color": "#3b8ed0", "nombre": "barcaza (80 camiones)"},
     "tren": {"t": 2000.0, "km_dia": 400.0, "por_punto": 1, "color": "#2e8b57", "nombre": "tren (2.000 t)"},
+    "pulpa": {"t": 10000.0, "km_dia": 144.0, "por_punto": 1, "color": "#26c6da", "nombre": "pulpa en el arenoducto (10.000 t, a 6 km/h)"},
 }
 
 
@@ -84,12 +87,14 @@ def chain_paths(route_cache: Path, bb_cache: Path, chains: list[Chain] = CHAINS)
         "barcaza, Tren Norpatagónico y camión": [("maritimo", AGUA_IBICUY_BB, None), ("tren", TREN_BB_ANELO, None), ("camion", CAMION_ULTIMA_MILLA, None)],
         "hidrovía patagónica por el río Negro": [("maritimo", AGUA_IBICUY_BB + AGUA_BB_VIEDMA[1:], None), ("fluvial", RIO_NEGRO_ARRIBA, None), ("camion", CAMION_ULTIMA_MILLA, None)],
         "arena cercana de Neuquén": [("camion", CAMION_CERCANA, None)],
+        "arenoducto, hipotético": [("pulpa", ARENODUCTO_TRAZA, None), ("camion", CAMION_ULTIMA_MILLA, None)],
     }
     out = []
     for c in chains:
         legs = [{"modo": modo, "corredor": corredor, **_path(coords)} for modo, coords, corredor in by_name[c.nombre]]
         out.append({"nombre": c.nombre, "usd_t": round(c.usd_t_pozo, 1), "kg_co2e_t": round(c.kg_co2e_t(), 1), "km_camion": round(c.km_camion), "km_total": round(c.km_total),
-                    "estado": c.estado, "limite": c.limite, "capacidad_mt": c.capacidad_mt, "paths": legs})
+                    "estado": c.estado, "limite": c.limite, "capacidad_mt": c.capacidad_mt, "paths": legs,
+                    "capex_musd": c.capex_musd, "vida_anios": c.vida_anios, "usd_t_variable": round(c.usd_t_variable, 1), "agua_t_t": c.agua_t_t})
     return out
 
 
@@ -189,7 +194,9 @@ input[type=range]{flex:1;accent-color:var(--accent)}
 <script>
 const D = __DATA__;
 const S = D.supuestos, Y = D.years, U = D.unidades, C = D.chains;
-const fmt = (x, d=0) => x == null ? "–" : x.toLocaleString("es-AR", {maximumFractionDigits: d, minimumFractionDigits: d});
+const fmt = (x, d=0) => x == null || !isFinite(x) ? "–" : x.toLocaleString("es-AR", {maximumFractionDigits: d, minimumFractionDigits: d});
+// costo por tonelada de una cadena a un volumen: fijo si tiene tarifa; si tiene capex, la inversión se reparte en lo que se mueve ese año
+const usdT = (c, tons) => c.capex_musd == null ? c.usd_t : (tons > 0 ? c.usd_t_variable + c.capex_musd * 1e6 / (c.vida_anios * tons) : Infinity);
 const Q = new URLSearchParams(location.search);   // ?ys=segundos por año, ?chain=índice (-1 todas), ?video=1 esconde los controles
 const map = L.map("map", {zoomControl: !Q.has("video")}).setView([-37.2, -64.0], 6);
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 18, attribution: "&copy; OpenStreetMap"}).addTo(map);
@@ -226,7 +233,7 @@ function drawOne(k, thin){
     const ll = p.coords.map(c => [c[0], c[1]]);
     const col = U[p.modo].color;
     L.polyline(ll, {color: "#111", weight: thin ? 3.5 : 5, opacity: .9}).addTo(routeLayers);
-    L.polyline(ll, {color: col, weight: thin ? 1.8 : 2.5, opacity: 1, dashArray: p.modo === "tren" ? "8 6" : null}).bindTooltip(C[k].nombre).addTo(routeLayers);
+    L.polyline(ll, {color: col, weight: thin ? 1.8 : 2.5, opacity: 1, dashArray: p.modo === "tren" ? "8 6" : (p.modo === "pulpa" ? "2 7" : null)}).bindTooltip(p.modo === "pulpa" ? C[k].nombre + ": traza hipotética por el corredor de la RN 5 y del gasoducto Perito Moreno" : C[k].nombre).addTo(routeLayers);
   });
   if (C[k].nombre.includes("Tren")) {
     const tn = D.tren_nuevo_desde; L.circleMarker([tn[1], tn[0]], {radius: 6, color: "#c0504d", weight: 2, fillColor: "#fff", fillOpacity: 1}).bindTooltip("Contraalmirante Cordero: desde acá faltan 83 km de vía nueva hasta Añelo").addTo(routeLayers);
@@ -275,12 +282,12 @@ C.forEach((c, i) => { const b = document.createElement("button"); b.textContent 
 { const b = document.createElement("button"); b.textContent = "todas a la vez"; b.onclick = () => pick(-1); chainsDiv.appendChild(b); }
 document.getElementById("legend").innerHTML = Object.values(U).filter((u, i, a) => a.findIndex(x => x.nombre === u.nombre) === i).map(u => `<span class="dot" style="background:${u.color}"></span>${u.nombre}${u.por_punto > 1 ? ", un punto = " + u.por_punto : ""}`).join(" · ") + ` · <span class="dot" style="background:#9aa5ad"></span>vuelve vacío`
   + `<br>Presión sobre la ruta, pasadas de arena contra todo el tránsito de 2017 del tramo: <span class="dot" style="background:#4caf50"></span>menos del 20 % · <span class="dot" style="background:#fee08b"></span>20 a 50 · <span class="dot" style="background:#fc8d59"></span>50 a 100 · <span class="dot" style="background:#d7301f"></span>la arena sola supera el tránsito de 2017`;
-document.getElementById("note").innerHTML = `Supuestos: ${fmt(S.t_por_camion)} t por camión, 2.400 t por barcaza, 2.000 t por tren, ${S.dias_operativos} días operativos. Costos por tonelada hasta el pozo: camión 97 (flete 70 y última milla 27, Infobae 8/2026); barcaza y camión 62,7; barcaza, tren y camión 35,2 (El Cronista 9/2026); hidrovía 48 (GlobalPorts 7/2026); arena cercana 30, calidad por confirmar. Emisiones pozo a rueda: camión 137, tren 24, río 33, mar 6,6 gCO₂e/tkm (EU-27 2018). Toda la arena nacional se supone por la cadena elegida.`;
+document.getElementById("note").innerHTML = `Supuestos: ${fmt(S.t_por_camion)} t por camión, 2.400 t por barcaza, 2.000 t por tren, ${S.dias_operativos} días operativos. Costos por tonelada hasta el pozo: camión 97 (flete 70 y última milla 27, Infobae 8/2026); barcaza y camión 62,7; barcaza, tren y camión 35,2 (El Cronista 9/2026); hidrovía 48 (GlobalPorts 7/2026); arena cercana 30, calidad por confirmar. Arenoducto: no existe; 1.100 km por el corredor de la RN 5 y del gasoducto, 2.000 MUSD de capex (el costo por km de OCP en Marruecos) a 20 años sin interés más 0,02 USD/tkm, media tonelada de agua por tonelada de arena; con el capex por km del gasoducto Perito Moreno serían 4.400 MUSD. Emisiones pozo a rueda: camión 137, tren 24, río 33, mar 6,6 gCO₂e/tkm (EU-27 2018); la pulpa toma el factor del tren como cota. Toda la arena nacional se supone por la cadena elegida.`;
 const slider = document.getElementById("slider"); slider.max = Y.length - 1;
 let idx = 0, ci = Math.max(-1, Math.min(C.length - 1, parseInt(Q.get("chain") || "0"))), playing = true, last = performance.now(), yearClock = 0, ended = false;
 const YEAR_SECONDS = Math.max(0.5, parseFloat(Q.get("ys") || "4"));
 const acum = C.map(() => 0);
-function acumHasta(cIdx, i){ let a = 0; for (let k = 0; k <= i; k++) a += Y[k].nat_t * C[cIdx].usd_t / 1e6; return a; }
+function acumHasta(cIdx, i){ let a = 0; for (let k = 0; k <= i; k++) a += Y[k].nat_t > 0 ? Y[k].nat_t * usdT(C[cIdx], Y[k].nat_t) / 1e6 : 0; return a; }
 function show(i, keep){
   idx = i; const y = Y[i]; slider.value = i;
   document.getElementById("year").textContent = y.anio + (D.partial === y.anio ? " ·" : "");
@@ -294,7 +301,7 @@ function show(i, keep){
     single.style.display = "none"; cmp.style.display = "block";
     let h = "<tr><th>cadena</th><th>MUSD</th><th>unidades</th><th>pasadas/día</th><th>kt CO₂e</th></tr>";
     C.forEach((c, k) => { const r = unitsForChain(k, y); const largo = c.paths.some(p => p.modo === "camion" && p.corredor); const pas = largo ? 2 * (y.nat_t / U.camion.t) / S.dias_operativos : 0;
-      h += `<tr><td>${c.nombre}</td><td class="v">${fmt(y.nat_t * c.usd_t / 1e6, 1)}</td><td class="v">${fmt(r.total)}</td><td class="v">${fmt(pas)}</td><td class="v">${fmt(y.nat_t * c.kg_co2e_t / 1e6, 1)}</td></tr>`; });
+      h += `<tr><td>${c.nombre}</td><td class="v">${fmt(y.nat_t * usdT(c, y.nat_t) / 1e6, 1)}</td><td class="v">${fmt(r.total)}</td><td class="v">${fmt(pas)}</td><td class="v">${fmt(y.nat_t * c.kg_co2e_t / 1e6, 1)}</td></tr>`; });
     cmp.innerHTML = h;
   } else {
     const c = C[ci];
@@ -304,9 +311,9 @@ function show(i, keep){
     document.getElementById("pasadas").textContent = fmt(pr.pasadas);
     document.getElementById("superados").textContent = pr.n ? `${fmt(pr.sup)} de ${fmt(pr.n)}, ${fmt(pr.kmSup)} km` : "–";
     document.getElementById("kmcam").textContent = fmt(c.km_camion) + " de " + fmt(c.km_total) + " km";
-    const costo = y.nat_t * c.usd_t / 1e6, base = y.nat_t * C[0].usd_t / 1e6;
-    document.getElementById("costo").innerHTML = fmt(costo, 1) + '<span class="u">millones de USD</span>';
-    document.getElementById("ahorro").textContent = (ci === 0) ? "es la referencia" : ("ahorra " + fmt(base - costo, 1) + " MUSD");
+    const ut = usdT(c, y.nat_t), costo = y.nat_t * ut / 1e6, base = y.nat_t * C[0].usd_t / 1e6;
+    document.getElementById("costo").innerHTML = fmt(costo, 1) + '<span class="u">millones de USD' + (c.capex_musd != null ? `, ${fmt(ut)} USD/t con el capex repartido en lo bombeado este año` : "") + '</span>';
+    document.getElementById("ahorro").textContent = (ci === 0) ? "es la referencia" : ((base - costo >= 0 ? "ahorra " : "cuesta de más ") + fmt(Math.abs(base - costo), 1) + " MUSD");
     document.getElementById("co2").textContent = fmt(y.nat_t * c.kg_co2e_t / 1e6, 1) + " kt CO₂e";
     document.getElementById("acum").textContent = fmt(acumHasta(ci, i)) + " MUSD";
   }

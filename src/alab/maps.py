@@ -33,8 +33,8 @@ def simplify(gdf: gpd.GeoDataFrame, tol_deg: float = 0.002, grid_deg: float = 0.
     return g
 
 
-def interactive_map(scored: gpd.GeoDataFrame, deposits: gpd.GeoDataFrame | None = None, demand: gpd.GeoDataFrame | None = None, known: gpd.GeoDataFrame | None = None, roads: gpd.GeoDataFrame | None = None, min_score: float = 20.0, min_area_km2: float = 1.0, tol_deg: float = 0.003, path: str | Path | None = None, route: gpd.GeoDataFrame | None = None, waypoints: gpd.GeoDataFrame | None = None) -> folium.Map:
-    """Mapa folium con los polígonos por puntaje, depósitos, demanda y lugares conocidos."""
+def interactive_map(scored: gpd.GeoDataFrame, deposits: gpd.GeoDataFrame | None = None, demand: gpd.GeoDataFrame | None = None, known: gpd.GeoDataFrame | None = None, roads: gpd.GeoDataFrame | None = None, min_score: float = 20.0, min_area_km2: float = 1.0, tol_deg: float = 0.003, path: str | Path | None = None, route: gpd.GeoDataFrame | None = None, waypoints: gpd.GeoDataFrame | None = None, pipeline: list[tuple[float, float]] | None = None, pipeline_note: str = "") -> folium.Map:
+    """Mapa folium con los polígonos por puntaje, depósitos, demanda, lugares conocidos, la ruta y, si se pasa, la traza hipotética del arenoducto (lon, lat)."""
     sel = scored[scored["score"] >= min_score].to_crs(CRS_GEO)
     if min_area_km2 > 0:
         sel = sel[sel.geometry.to_crs("EPSG:5344").area / 1e6 >= min_area_km2]
@@ -86,6 +86,12 @@ def interactive_map(scored: gpd.GeoDataFrame, deposits: gpd.GeoDataFrame | None 
         if waypoints is not None and len(waypoints):
             for _, w in waypoints.iterrows():
                 folium.CircleMarker([w["lat"], w["lon"]], radius=5, color="#111111", weight=1.5, fill=True, fill_color="#ffffff", fill_opacity=1.0, tooltip=f"{w['lugar']}: {w['nota']}").add_to(fg)
+        fg.add_to(m)
+    if pipeline:
+        fg = folium.FeatureGroup(name="arenoducto hipotético, pulpa por caño")
+        coords = [(lat, lon) for lon, lat in pipeline]
+        folium.PolyLine(coords, color="#111111", weight=5, opacity=0.8).add_to(fg)
+        folium.PolyLine(coords, color="#26c6da", weight=2.5, opacity=1.0, dash_array="2 7", tooltip=pipeline_note or "arenoducto hipotético").add_to(fg)
         fg.add_to(m)
     folium.LayerControl(collapsed=False).add_to(m)
     if path is not None:

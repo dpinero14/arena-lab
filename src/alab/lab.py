@@ -37,7 +37,8 @@ def chains_for_lab(chains: list[Chain] = CHAINS, min_km: float = 200.0) -> list[
     for c in chains:
         largo = sum(l.km for l in c.legs if l.modo == "camion" and l.km >= min_km)
         out.append({"nombre": c.nombre, "usd_t": round(c.usd_t_pozo, 1), "kg_co2e_t": round(c.kg_co2e_t(), 1), "km_camion": round(c.km_camion),
-                    "km_camion_largo": round(largo), "corredor": CORREDOR.get(c.nombre), "capacidad_mt": c.capacidad_mt, "estado": c.estado, "limite": c.limite})
+                    "km_camion_largo": round(largo), "corredor": CORREDOR.get(c.nombre), "capacidad_mt": c.capacidad_mt, "estado": c.estado, "limite": c.limite,
+                    "capex_musd": c.capex_musd, "vida_anios": c.vida_anios, "usd_t_variable": round(c.usd_t_variable, 1), "agua_t_t": c.agua_t_t})
     return out
 
 
@@ -134,6 +135,7 @@ td.v{font-family:Consolas,monospace}
   <div class="row"><span class="l">tramos donde la arena supera todo el tránsito de 2017</span><span class="v" id="sup"></span></div>
   <div class="row"><span class="l">emisiones</span><span class="v" id="co2"></span></div>
   <div class="row"><span class="l">el tren paga sus 500 MUSD en</span><span class="v" id="repago"></span></div>
+  <div class="row"><span class="l">el arenoducto paga sus 2.000 MUSD en</span><span class="v" id="repagoDucto"></span></div>
   <div class="warn" id="warn"></div>
 </div>
 </div>
@@ -149,7 +151,9 @@ td.v{font-family:Consolas,monospace}
 const D = __DATA__; const S = D.supuestos, C = D.chains;
 const fmt = (x, d=0) => x == null || !isFinite(x) ? "–" : x.toLocaleString("es-AR", {maximumFractionDigits: d, minimumFractionDigits: d});
 const colorPct = pct => pct >= 100 ? "#d7301f" : pct >= 50 ? "#fc8d59" : pct >= 20 ? "#fee08b" : "#4caf50";
-const iCam = C.findIndex(c => c.corredor === "Ibicuy"), iBB = C.findIndex(c => c.corredor === "Bahía Blanca"), iTren = C.findIndex(c => c.nombre.includes("Tren"));
+const iCam = C.findIndex(c => c.corredor === "Ibicuy"), iBB = C.findIndex(c => c.corredor === "Bahía Blanca"), iTren = C.findIndex(c => c.nombre.includes("Tren")), iDucto = C.findIndex(c => c.nombre.includes("arenoducto"));
+// costo por tonelada a un volumen: fijo si hay tarifa; con capex, la inversión se reparte en lo que se mueve
+const usdT = (c, tons) => c.capex_musd == null ? c.usd_t : (tons > 0 ? c.usd_t_variable + c.capex_musd * 1e6 / (c.vida_anios * tons) : Infinity);
 // perillas
 const mt = document.getElementById("mt");
 const presets = [[D.medido.mt, `${D.medido.anio}: ${fmt(D.medido.mt, 1)} Mt, registro de fractura`], [7, "2026: 7 Mt, proyección"], [8, "2027: 8 Mt, proyección"], [15, "15 Mt, el techo que se menciona"]];
@@ -158,7 +162,7 @@ const cargas = document.getElementById("cargas");
 D.cargas.forEach((c, i) => { const l = document.createElement("label"); l.innerHTML = `<input type="radio" name="carga" value="${c.t}" ${i === 0 ? "checked" : ""}> ${c.nombre}`; cargas.appendChild(l); });
 const shares = document.getElementById("shares"); const sliders = [];
 C.forEach((c, i) => { if (i === iCam) return; const d = document.createElement("div"); d.className = "k";
-  d.innerHTML = `<label><span>${c.nombre}</span><span class="v" id="sh${i}"></span></label><input type="range" min="0" max="100" step="5" value="0" data-i="${i}"><div class="share">${c.usd_t} USD/t al pozo · ${c.km_camion} km en camión · ${c.kg_co2e_t} kg CO₂e/t</div>`;
+  d.innerHTML = `<label><span>${c.nombre}</span><span class="v" id="sh${i}"></span></label><input type="range" min="0" max="100" step="5" value="0" data-i="${i}"><div class="share" id="shl${i}">${c.usd_t} USD/t al pozo · ${c.km_camion} km en camión · ${c.kg_co2e_t} kg CO₂e/t</div>`;
   shares.appendChild(d); sliders.push(d.querySelector("input")); });
 function pct(){ // reparto en fracciones; el que se mueve se recorta si el total pasa de 100
   let tot = 0; sliders.forEach(s => tot += +s.value);
@@ -194,12 +198,16 @@ function calc(){
   document.getElementById("mtV").textContent = fmt(+mt.value, 1) + " Mt";
   document.getElementById("camV").textContent = fmt(100 * tons[iCam] / t) + " % camión directo";
   document.getElementById("camL").textContent = `${C[iCam].usd_t} USD/t al pozo · ${C[iCam].km_camion} km en camión · ${C[iCam].kg_co2e_t} kg CO₂e/t. Lo que no va por otra cadena, va por acá.`;
-  sliders.forEach(s => document.getElementById("sh" + s.dataset.i).textContent = fmt(100 * tons[+s.dataset.i] / t) + " %");
-  const costo = tons.reduce((a, x, i) => a + x * C[i].usd_t, 0) / 1e6, base = t * C[iCam].usd_t / 1e6;
+  sliders.forEach(s => { const i = +s.dataset.i; document.getElementById("sh" + i).textContent = fmt(100 * tons[i] / t) + " %";
+    if (C[i].capex_musd != null) document.getElementById("shl" + i).textContent = `${tons[i] > 0 ? fmt(usdT(C[i], tons[i])) : "–"} USD/t al pozo con ${fmt(tons[i] / 1e6, 1)} Mt (capex ${fmt(C[i].capex_musd)} MUSD a ${fmt(C[i].vida_anios)} años) · ${C[i].km_camion} km en camión · ${C[i].kg_co2e_t} kg CO₂e/t`; });
+  const costo = tons.reduce((a, x, i) => a + (x > 0 ? x * usdT(C[i], x) : 0), 0) / 1e6, base = t * C[iCam].usd_t / 1e6;
   const co2 = tons.reduce((a, x, i) => a + x * C[i].kg_co2e_t, 0) / 1e6;
+  if (iDucto >= 0 && tons[iDucto] > 0) warn.push(`arenoducto: ${fmt(tons[iDucto] * C[iDucto].agua_t_t / 1e6, 1)} hm³ de agua por año en la pulpa; con el capex por km del gasoducto (4.400 MUSD) costaría ${fmt(C[iDucto].usd_t_variable + 4400e6 / (C[iDucto].vida_anios * tons[iDucto]))} USD/t.`);
   const pasIb = 2 * tons[iCam] / tcam / S.dias_operativos, pasBB = iBB >= 0 ? 2 * tons[iBB] / tcam / S.dias_operativos : 0;
   const camiones = (pasIb / 2) * S.dias_ciclo + (pasBB / 2) * S.dias_ciclo * (iBB >= 0 ? C[iBB].km_camion_largo / C[iCam].km_camion_largo : 0);
   const ahorroTren = iTren >= 0 ? tons[iTren] * (C[iCam].usd_t - C[iTren].usd_t) / 1e6 : 0;
+  const ahorroDucto = iDucto >= 0 && tons[iDucto] > 0 ? tons[iDucto] * (C[iCam].usd_t - usdT(C[iDucto], tons[iDucto])) / 1e6 : 0;
+  document.getElementById("repagoDucto").textContent = iDucto < 0 || tons[iDucto] <= 0 ? "no va nada por el caño" : (ahorroDucto > 0 ? fmt(C[iDucto].capex_musd / ahorroDucto, 1) + " años" : "nunca: a este volumen cuesta más que el camión");
   document.getElementById("costo").textContent = fmt(costo); document.getElementById("ahorro").textContent = fmt(base - costo);
   document.getElementById("pasIb").textContent = fmt(pasIb); document.getElementById("pasBB").textContent = fmt(pasBB);
   document.getElementById("camiones").textContent = fmt(camiones);
@@ -210,7 +218,7 @@ function calc(){
   document.getElementById("sup").textContent = `${fmt(a.sup)} de ${fmt(a.n)} en Entre Ríos, ${fmt(a.kmSup)} km · ${fmt(b.sup)} de ${fmt(b.n)} en la RN 22`;
   document.getElementById("warn").innerHTML = warn.join("<br>");
 }
-document.getElementById("note").innerHTML = `Reglas: el costo por tonelada de cada cadena no cambia con la carga del camión, porque no hay una fuente que lo mida; la carga solo cambia cuántos camiones y cuántas pasadas hacen falta. Pasadas = viajes cargados más vueltas vacías, con ${S.dias_operativos} días operativos y un ciclo de ${S.dias_ciclo} días para los camiones de larga distancia. El tránsito de 2017 es el último publicado por tramo e incluye a todos los vehículos; la comparación es contra ese total, no contra los camiones de entonces. Una pasada de un semirremolque de cinco ejes desgasta el pavimento como ${fmt(D.autos_por_pasada)} autos (ley de la cuarta potencia, AASHTO 1993). El repago del tren usa solo el ahorro de las toneladas que van por tren contra el camión directo.`;
+document.getElementById("note").innerHTML = `Reglas: el costo por tonelada de cada cadena no cambia con la carga del camión, porque no hay una fuente que lo mida; la carga solo cambia cuántos camiones y cuántas pasadas hacen falta. Pasadas = viajes cargados más vueltas vacías, con ${S.dias_operativos} días operativos y un ciclo de ${S.dias_ciclo} días para los camiones de larga distancia. El tránsito de 2017 es el último publicado por tramo e incluye a todos los vehículos; la comparación es contra ese total, no contra los camiones de entonces. Una pasada de un semirremolque de cinco ejes desgasta el pavimento como ${fmt(D.autos_por_pasada)} autos (ley de la cuarta potencia, AASHTO 1993). Los repagos del tren y del arenoducto usan solo el ahorro de las toneladas que van por cada uno contra el camión directo. El arenoducto no existe: 1.100 km por el corredor de la RN 5 y del gasoducto Perito Moreno, 2.000 MUSD de capex al costo por km del mineraloducto de OCP en Marruecos, amortizados a 20 años sin interés en lo que se bombea, más 0,02 USD/tkm de operación y media tonelada de agua por tonelada de arena; las emisiones de la pulpa toman el factor del tren como cota.`;
 calc();
 </script></body></html>
 """

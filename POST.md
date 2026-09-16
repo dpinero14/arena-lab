@@ -95,6 +95,19 @@ código a la vista.
     20 años sin obras de ampliación, con calzada de 1961 de 3,30 a 3,65 m por
     mano para camiones de 2,60 m.
 
+## El arenoducto (idea de Diego, 16/9/2026)
+
+13. **Mover la arena por caño no es ciencia ficción, es un mineraloducto.**
+    Minas-Rio, 529 km y 26,5 Mt por año; OCP en Marruecos, 187 km, 400 M€ y
+    90 % menos de costo de transporte; Alumbrera, 316 km, 1997 a 2018; la
+    URSS movió piedra en cápsulas por un tubo de 49 km en 1980; el Dune
+    Express lleva 13 Mt de arena de fractura por una cinta cerrada de 68 km.
+    Con el capex por km de OCP, un arenoducto Ibicuy–Añelo de 1.100 km costaría
+    2.000 MUSD y daría 69 USD/t a 5 Mt, 62 a 8 Mt: repaga en 14 y 7 años.
+    Con el capex por km del gasoducto, 4.400 MUSD y 93 USD/t, casi el camión.
+    Pierde con el tren a 1.000 km; gana con arena a 100 km. Y la pulpa llega
+    húmeda, que es lo que el Permian ya bombea sin secar y con menos polvo.
+
 ## Lo que hay que decir sí o sí
 
 - El mapa señala dónde buscar, no si la arena sirve. No hay un solo ensayo de
