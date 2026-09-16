@@ -181,7 +181,7 @@ function show(i, keep){
   const pr = paintTramos(ci, y);
   const cmp = document.getElementById("cmp"), single = document.getElementById("single");
   if (ci < 0) {
-    document.getElementById("estado").innerHTML = "<b>Las cinco cadenas a la vez</b>, cada una con sus unidades. La tabla compara el mismo año por cada camino; la ruta se pinta con la presión del camión directo, la de hoy.";
+    document.getElementById("estado").innerHTML = `<b>Las ${C.length === 6 ? "seis" : C.length} cadenas a la vez</b>, cada una con sus unidades. La tabla compara el mismo año por cada camino; la ruta se pinta con la presión del camión directo, la de hoy. El arenoducto reparte su capex en lo bombeado cada año: en los años de poca arena sale carísimo.`;
     single.style.display = "none"; cmp.style.display = "block";
     let h = "<tr><th>cadena</th><th>MUSD</th><th>unidades</th><th>pasadas/día</th><th>kt CO₂e</th></tr>";
     C.forEach((c, k) => { const r = unitsForChain(k, y); const largo = c.paths.some(p => p.modo === "camion" && p.corredor); const pas = largo ? 2 * (y.nat_t / U.camion.t) / S.dias_operativos : 0;
