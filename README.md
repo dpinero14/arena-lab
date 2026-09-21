@@ -296,7 +296,7 @@ del 17 de septiembre de 2026, y están incorporadas con crédito:
   Mercante: las barcazas de hidrovía son para ríos interiores; el tramo
   marítimo va con convoy de empuje o barcaza ATB, de 15.000 a 20.000 t contra
   1.500 de una fluvial. La animación ahora distingue los dos equipos.
-- **Carlos S.**, gerente de operaciones: el costo por tonelada no decide solo.
+- **Carlos Scanio**, gerente de operaciones y de supply chain: el costo por tonelada no decide solo.
   Cada transbordo suma manipuleo, espera y stock de seguridad, y una fractura
   que se queda sin arena frena la operación. El modelo compara promedios y no
   tiene esa variabilidad: queda declarado en las limitaciones y es el próximo
