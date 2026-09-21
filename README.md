@@ -311,6 +311,15 @@ del 17 de septiembre de 2026, y están incorporadas con crédito:
   río, y la equivalencia de una barcaza cada tres trenes o 360 semirremolques.
 - **Gonzalo Andrés Ferez**, ingeniero ambiental: los factores de emisión son
   europeos; falta una fuente argentina por modo.
+- **Aldo Olcese Rodríguez**, gerente general en minería: faltaba el capital
+  inmovilizado en tránsito, que en trayectos largos puede cambiar el orden de
+  las alternativas. Ahora está calculado y declarado: con la arena a 22
+  dólares la tonelada y un costo de capital del 15 % anual, el camión
+  inmoviliza 3 centavos por tonelada en sus 2,9 días de viaje, y la cadena por
+  agua y tren, 6 centavos en 6,7 días. Contra los 62 dólares que separan una
+  de otra, no mueve el orden; con carga de alto valor por tonelada, sí lo
+  movería. Está en `Chain.capital_transito_usd_t` y en la tabla de cadenas.
+  Aun duplicando la espera por transbordo, sigue por debajo de 10 centavos.
 
 ## Limitaciones
 

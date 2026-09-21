@@ -30,6 +30,14 @@ MODES = {
 ULTIMA_MILLA_USD_T = 27.0     # de la planta cercana al pozo, Infobae 15/8/2026; igual en todas las cadenas
 INVERSION_TREN_MUSD = 500.0   # Tren Norpatagónico, estimación original (Bloomberg Línea, 11/9/2026)
 
+# Velocidad comercial por modo, km por día, las mismas que usan las unidades de la animación.
+KM_DIA = {"camion": 500.0, "tren": 400.0, "fluvial": 300.0, "maritimo": 400.0, "pulpa": 144.0}
+DIAS_POR_TRANSBORDO = 0.5     # espera y manipuleo en cada cambio de modo; supuesto, no medido
+# Capital inmovilizado mientras la arena viaja: lo preguntó Aldo Olcese Rodríguez en los comentarios
+# del post del 17/9/2026. Con arena barata la cifra es chica, pero se declara igual.
+VALOR_ARENA_USD_T = 22.0      # precio en cantera, Infobae 15/8/2026
+TASA_CAPITAL_ANUAL = 0.15     # costo de capital en dólares, orden de magnitud; declarado, no medido
+
 
 @dataclass
 class Leg:
@@ -61,6 +69,15 @@ class Chain:
 
     def kg_co2e_t(self, f: dict = EMISIONES_G_TKM) -> float:
         return sum(l.km * f[l.modo] for l in self.legs) / 1000.0
+
+    @property
+    def dias_transito(self) -> float:
+        """Días que la arena pasa viajando: cada tramo a la velocidad comercial de su modo, más media jornada por transbordo."""
+        return sum(l.km / KM_DIA[l.modo] for l in self.legs) + DIAS_POR_TRANSBORDO * max(0, len(self.legs) - 1)
+
+    def capital_transito_usd_t(self, valor_usd_t: float = VALOR_ARENA_USD_T, tasa_anual: float = TASA_CAPITAL_ANUAL) -> float:
+        """Costo del capital inmovilizado mientras la arena viaja, en USD por tonelada."""
+        return valor_usd_t * self.dias_transito / 365.0 * tasa_anual
 
     def usd_t_at(self, tons: float) -> float:
         """Costo por tonelada a un volumen anual: fijo si hay tarifa; si hay capex, la inversión se reparte en lo que se mueve."""
@@ -150,7 +167,8 @@ def chains_table(chains: list[Chain] = CHAINS) -> pd.DataFrame:
     rows = []
     for c in chains:
         rows.append({"cadena": c.nombre, "usd_t_pozo": round(c.usd_t_pozo, 1), "km_total": round(c.km_total), "km_camion": round(c.km_camion),
-                     "kg_co2e_t": round(c.kg_co2e_t(), 1), "capex_musd": c.capex_musd, "agua_t_t": c.agua_t_t, "estado": c.estado, "limite": c.limite, "fuente": c.fuente})
+                     "kg_co2e_t": round(c.kg_co2e_t(), 1), "dias_transito": round(c.dias_transito, 1), "capital_transito_usd_t": round(c.capital_transito_usd_t(), 2),
+                     "capex_musd": c.capex_musd, "agua_t_t": c.agua_t_t, "estado": c.estado, "limite": c.limite, "fuente": c.fuente})
     return pd.DataFrame(rows)
 
 

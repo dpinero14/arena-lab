@@ -63,3 +63,19 @@ def test_rutas_que_salieron_de_los_comentarios():
 
 def test_barcaza_de_rio_y_de_mar_no_son_el_mismo_equipo():
     assert BARCAZA["atb_t"] >= 10 * BARCAZA["fluvial_t"] and "García Arguijo" in BARCAZA["fuente"]
+
+
+def test_capital_inmovilizado_en_transito_no_cambia_el_orden():
+    """La pregunta de Aldo Olcese Rodríguez: con arena barata, el capital en tránsito es de centavos."""
+    from alab.logistics import DIAS_POR_TRANSBORDO, VALOR_ARENA_USD_T, TASA_CAPITAL_ANUAL
+    cam = next(c for c in CHAINS if c.nombre == "camión directo, hoy")
+    assert 2.5 < cam.dias_transito < 3.5                      # 1.461 km a 500 km/día, sin transbordos
+    assert abs(cam.capital_transito_usd_t() - VALOR_ARENA_USD_T * cam.dias_transito / 365 * TASA_CAPITAL_ANUAL) < 1e-9
+    tren = next(c for c in CHAINS if "Tren" in c.nombre)
+    assert tren.dias_transito > cam.dias_transito             # por agua y tren se tarda más
+    assert tren.dias_transito == sum(l.km / __import__("alab.logistics", fromlist=["KM_DIA"]).KM_DIA[l.modo] for l in tren.legs) + 3 * DIAS_POR_TRANSBORDO
+    t = chains_table()
+    assert t.capital_transito_usd_t.max() < 0.2               # todas por debajo de 20 centavos por tonelada
+    orden = list(t.sort_values("usd_t_pozo").cadena)
+    t["total"] = t.usd_t_pozo + t.capital_transito_usd_t
+    assert list(t.sort_values("total").cadena) == orden        # sumarlo no reordena nada
