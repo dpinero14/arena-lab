@@ -1,4 +1,4 @@
-from alab.logistics import BENCHMARKS, CHAINS, EMISIONES_G_TKM, Chain, Leg, chains_table, scenarios
+from alab.logistics import ARENA_CHUBUT, ARENA_RIO_NEGRO, BARCAZA, BENCHMARKS, CHAINS, EMISIONES_G_TKM, TREN_MENDOZA, Chain, Leg, chains_table, scenarios
 
 
 def test_cadena_camion_es_la_mas_cara_y_la_que_mas_emite():
@@ -43,3 +43,23 @@ def test_arenoducto_reparte_el_capex_en_el_volumen():
     ducto = s[s.cadena.str.contains("arenoducto")].set_index("demanda_mt")
     assert ducto.loc[8.0, "usd_t"] < ducto.loc[5.0, "usd_t"] and ducto.loc[5.0, "agua_hm3"] == 2.5
     assert ducto.loc[5.0, "repago_inversion_anios"] > 0 and ducto.loc[5.0, "pasadas_dia_rutas_nacionales"] == 0
+
+
+def test_rutas_que_salieron_de_los_comentarios():
+    """Tren a Mendoza, Río Negro y Chubut: existen, cuestan menos que el camión largo y no son gratis."""
+    t = chains_table().set_index("cadena")
+    cam = t.loc["camión directo, hoy"]
+    mza, rn, ch = t.loc["tren a Mendoza y camión"], t.loc["arena de Río Negro, desde Allen"], t.loc["arena de Chubut, desde Dolavon"]
+    assert mza.usd_t_pozo < cam.usd_t_pozo and mza.km_camion == TREN_MENDOZA["km_camion"]
+    assert mza.kg_co2e_t < cam.kg_co2e_t          # el tren evita la mitad del camino, no todo
+    assert rn.usd_t_pozo < ch.usd_t_pozo < cam.usd_t_pozo    # Allen está a 120 km; Dolavon, a 855
+    assert rn.km_camion == ARENA_RIO_NEGRO["km_camion"] and ch.km_camion == ARENA_CHUBUT["km_camion"]
+    mza_chain = next(c for c in CHAINS if c.nombre == "tren a Mendoza y camión")
+    assert abs(mza_chain.capacidad_mt - 0.12) < 1e-9         # 10.000 t por mes es el 2 % de la demanda de 2025
+    s = scenarios(tons_mt=(5.0,)).set_index("cadena")
+    assert s.loc["tren a Mendoza y camión", "cubre_pct"] == 2 and s.loc["arena de Río Negro, desde Allen", "cubre_pct"] == 16
+    assert s.loc["tren a Mendoza y camión", "pasadas_dia_rutas_nacionales"] > 0   # los 748 km de Palmira a Añelo siguen siendo camión
+
+
+def test_barcaza_de_rio_y_de_mar_no_son_el_mismo_equipo():
+    assert BARCAZA["atb_t"] >= 10 * BARCAZA["fluvial_t"] and "García Arguijo" in BARCAZA["fuente"]

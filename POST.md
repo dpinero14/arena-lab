@@ -118,6 +118,22 @@ código a la vista.
   comparación es contra ese total. Toda la arena se supone por Entre Ríos,
   cuando es el 75 %: las pasadas reales por Puelches son algo menores.
 
+## Lo que agregaron los comentarios (21/9/2026)
+
+14. **El modelo cambió por los comentarios del post.** Tres cadenas nuevas:
+    el tren a Palmira y camión a Neuquén, como el acuerdo de YPF con Trenes
+    Argentinos Cargas de 2021 (84 USD/t, 124 kg CO2e/t, 10.000 t por mes);
+    la arena de Río Negro desde Allen (33 USD/t, 120 km, la segunda más barata
+    de las nueve); y la de Chubut desde Dolavon (68 USD/t, 855 km).
+15. **La barcaza de río y la de mar no son el mismo equipo.** 1.500 toneladas
+    contra 15.000 a 20.000 de una ATB: la animación ahora las distingue.
+16. **El límite que más duele no es el costo, es la confiabilidad.** El modelo
+    compara promedios; no tiene colas en los transbordos ni stock de
+    seguridad. Declarado, con crédito a quien lo marcó.
+17. **La física le da la razón al modelo en el arenoducto.** Con granos de 0,1
+    a 0,6 mm hay que sostener de 3 a 5 m/s para que la pulpa no sedimente: la
+    misma conclusión a la que el costo llegaba por otro lado.
+
 ## Ángulos posibles
 
 - El hueco del mapa: el Estado explora arena en una zona que su propio

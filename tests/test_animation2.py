@@ -50,3 +50,21 @@ def test_corredor_y_capa_de_tramos(tmp_path):
               "tramos": {"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"ruta": "RN 152", "corredor": "Ibicuy", "km": 163.3, "km_desde": 900.0, "tmda17": 197}, "geometry": {"type": "LineString", "coordinates": [[-65, -38], [-66, -38.5]]}}]}}
     html = logistics_animation_html(y, cp, layers, waypoints_frame(), tmp_path / "v2.html").read_text(encoding="utf-8")
     assert '"tmda17": 197' in html and "paintTramos" in html and "lyTramos" in html
+
+
+def test_rutas_nuevas_tienen_traza(tmp_path):
+    """Las cadenas que trajeron los comentarios se dibujan: con caché de OSRM si la hay, con traza aproximada si no."""
+    a = _fake_osrm(tmp_path, "a.json", [[-59.17, -33.74], [-68.79, -38.35]]); b = _fake_osrm(tmp_path, "b.json", [[-62.27, -38.72], [-68.79, -38.35]])
+    cp = {c["nombre"]: c for c in chain_paths(a, b)}
+    mza = cp["tren a Mendoza y camión"]
+    assert [p["modo"] for p in mza["paths"]] == ["tren", "camion"] and mza["paths"][0]["km"] > 700
+    for nombre in ("arena de Río Negro, desde Allen", "arena de Chubut, desde Dolavon"):
+        assert len(cp[nombre]["paths"]) == 1 and cp[nombre]["paths"][0]["modo"] == "camion"
+    # con caché, la traza del camión a Añelo sale de OSRM
+    p = _fake_osrm(tmp_path, "palmira.json", [[-68.55, -33.06], [-68.79, -38.35]])
+    con_cache = {c["nombre"]: c for c in chain_paths(a, b, extra_caches={"palmira": p})}
+    assert con_cache["tren a Mendoza y camión"]["paths"][1]["coords"][0][1] == -68.55
+
+
+def test_barcaza_de_mar_mueve_mas_que_la_de_rio():
+    assert UNIDADES["maritimo"]["t"] > UNIDADES["fluvial"]["t"] and "ATB" in UNIDADES["maritimo"]["nombre"]

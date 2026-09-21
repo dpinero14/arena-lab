@@ -162,7 +162,7 @@ con 60 millones de dólares, la RN 5 concesionada sin obras de ampliación y el
 bypass de Añelo. Del orden de 100 millones de dólares, una vez, contra 354
 millones por año de flete.
 
-## La logística de la arena: seis caminos con las mismas reglas
+## La logística de la arena: nueve caminos con las mismas reglas
 
 Cada cadena es una lista de tramos con su modo y sus kilómetros, más un costo
 por tonelada puesta en el pozo tomado de fuentes de 2026, y las emisiones con
@@ -175,6 +175,9 @@ para camión, tren, río y mar. Todo declarado en `src/alab/logistics.py`.
 | Barcaza a Bahía Blanca y camión | 63 | 620 | 100 | en construcción: terminal de PTP en Ibicuy, 12 MUSD |
 | Barcaza, Tren Norpatagónico y camión | 35 | 50 | 38 | no existe: el tren mueve menos de 100.000 t, 37 % de la vía en buen estado, faltan 83 km |
 | Hidrovía patagónica por el río Negro | 48 | 50 | 48 | en estudio: dragado, terminales y cabotaje pendientes |
+| Tren a Mendoza y camión | 84 | 748 | 124 | existió: YPF y Trenes Argentinos Cargas, 10.000 t por mes desde 2021 |
+| Arena de Río Negro, desde Allen | 33 | 120 | 16 | existe y se recupera: 1,5 Mt en 2025 tras caer 42,6 % |
+| Arena de Chubut, desde Dolavon | 68 | 855 | 117 | existe, chica: Arenas Patagónicas fue pionera |
 | Arena cercana de Neuquén | 30 | 60 | 8 | en prueba: 20.000 t por mes, calidad por confirmar |
 | Arenoducto, hipotético | 69 a 5 Mt, 62 a 8 Mt | 50 | 33 | no existe: pulpa por caño, supuestos declarados abajo |
 
@@ -276,6 +279,39 @@ docs/            mapa_arena.html, ruta_animada.html, laboratorio_arena.html y fi
 data/raw/        vacío y en .gitignore; ver data/README.md
 ```
 
+## Lo que me corrigieron
+
+Tres cadenas y una corrección de equipo salieron de los comentarios al post
+del 17 de septiembre de 2026, y están incorporadas con crédito:
+
+- **Matías Derlich**, ingeniero mecánico: faltaba el tren a Mendoza. En agosto
+  de 2021 YPF acordó con Trenes Argentinos Cargas llevar arena de San Nicolás
+  a Palmira por la línea San Martín, 10.000 t por mes, y de ahí en camión a
+  Neuquén. También marcó las arenas de Río Negro y de Chubut.
+- **Maximiliano San Martín**: hay arena cerca, en Neuquén y en Río Negro. Es
+  cierto y ahora está medido: Allen queda a 120 km de Añelo y sale 33 dólares
+  la tonelada contra 97 del camión desde Entre Ríos. La razón por la que
+  perdió mercado en 2025 fue la calidad, no la distancia.
+- **Alejandro Raúl García Arguijo**, profesor de la Universidad de la Marina
+  Mercante: las barcazas de hidrovía son para ríos interiores; el tramo
+  marítimo va con convoy de empuje o barcaza ATB, de 15.000 a 20.000 t contra
+  1.500 de una fluvial. La animación ahora distingue los dos equipos.
+- **Carlos S.**, gerente de operaciones: el costo por tonelada no decide solo.
+  Cada transbordo suma manipuleo, espera y stock de seguridad, y una fractura
+  que se queda sin arena frena la operación. El modelo compara promedios y no
+  tiene esa variabilidad: queda declarado en las limitaciones y es el próximo
+  paso más útil.
+- **Diego Hernán Corona**, marinero de puente: el arenoducto choca con la
+  física de la pulpa. Bombear arena existe, así descargan las dragas, pero a
+  kilómetros: con granos de 0,1 a 0,6 mm hay que sostener de 3 a 5 m/s para
+  que no sedimente. Es la misma conclusión a la que llega el modelo por el
+  lado del costo.
+- **Alberto Gianola Otamendi**, perito naval y autor de *El río Negro, su uso
+  como vía navegable* (Boletín del Centro Naval 851, 2019): los 720 km del
+  río, y la equivalencia de una barcaza cada tres trenes o 360 semirremolques.
+- **Gonzalo Andrés Ferez**, ingeniero ambiental: los factores de emisión son
+  europeos; falta una fuente argentina por modo.
+
 ## Limitaciones
 
 - El mapa señala dónde buscar, no si la arena sirve. Esfericidad, redondez,
@@ -296,6 +332,13 @@ data/raw/        vacío y en .gitignore; ver data/README.md
   de un mineraloducto de fosfato en Marruecos, la operación de la literatura y
   el factor de emisión del tren como cota. Cambiar el capex cambia el
   veredicto, por eso van dos versiones.
+- El modelo compara promedios: no simula variabilidad de tiempos, colas en los
+  transbordos ni stock de seguridad. Es el límite que más podría cambiar el
+  orden entre cadenas, y lo marcó un gerente de operaciones en los comentarios.
+- Las tres cadenas nuevas van por rutas cuyo tránsito no está medido acá: los
+  748 km de Palmira a Añelo, los 120 de Allen y los 855 de Dolavon no pasan
+  por los tramos con TMDA que sí se miden en la ruta de Entre Ríos. Y el km de
+  vía del tren a Mendoza se aproxima por la distancia carretera, que es menor.
 - El tránsito por tramo es de 2017, el último publicado, e incluye a todos los
   vehículos; la comparación es contra ese total, no contra un tránsito "sin
   arena". Toda la arena nacional se supone por la ruta de Entre Ríos, cuando

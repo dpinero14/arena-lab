@@ -31,6 +31,11 @@ TREN_BB_ANELO = [(-62.30, -38.78), (-62.90, -38.85), (-64.00, -38.99), (-65.65, 
 TREN_NUEVO_DESDE = (-68.16, -38.72)   # Contraalmirante Cordero: desde acá los 83 km que faltan
 CAMION_ULTIMA_MILLA = [(-68.79, -38.35), (-68.66, -38.30), (-68.60, -38.22)]
 CAMION_CERCANA = [(-68.43, -39.02), (-68.55, -38.80), (-68.70, -38.55), (-68.79, -38.35)]
+# rutas que trajeron los comentarios del post del 17/9/2026; las de camión salen de OSRM si hay caché, si no van por estas rectas
+TREN_SN_PALMIRA = [(-60.22, -33.33), (-60.57, -33.89), (-60.95, -34.59), (-62.71, -34.27), (-65.46, -33.68), (-68.55, -33.06)]  # línea San Martín, aproximada por estaciones
+CAMION_PALMIRA_ANELO = [(-68.55, -33.06), (-68.35, -34.60), (-68.10, -36.10), (-68.20, -37.30), (-68.06, -38.20), (-68.79, -38.35)]
+CAMION_ALLEN_ANELO = [(-67.82, -38.98), (-68.06, -38.95), (-68.16, -38.72), (-68.79, -38.35)]
+CAMION_DOLAVON_ANELO = [(-65.71, -43.30), (-66.40, -42.50), (-67.20, -41.20), (-67.60, -40.20), (-67.90, -39.30), (-68.16, -38.72), (-68.79, -38.35)]
 # arenoducto hipotético: cruce del Paraná en Zárate, corredor de la RN 5 hasta Salliqueló y la traza del gasoducto Perito Moreno hasta Tratayén
 ARENODUCTO_TRAZA = [(-59.17, -33.74), (-59.03, -34.10), (-59.60, -34.60), (-60.49, -35.12), (-61.97, -35.81), (-62.96, -36.75), (-64.60, -37.05), (-66.30, -37.55), (-67.90, -38.10), (-68.73, -38.38), (-68.79, -38.35)]
 
@@ -52,8 +57,9 @@ CONTEXTO = {
 # unidades de transporte por modo: capacidad por unidad, km por día y cuántas unidades representa un punto
 UNIDADES = {
     "camion": {"t": 30.0, "km_dia": 500.0, "por_punto": 25, "color": "#f2b134", "nombre": "camión"},
-    "fluvial": {"t": 2400.0, "km_dia": 300.0, "por_punto": 1, "color": "#3b8ed0", "nombre": "barcaza (80 camiones)"},
-    "maritimo": {"t": 2400.0, "km_dia": 400.0, "por_punto": 1, "color": "#3b8ed0", "nombre": "barcaza (80 camiones)"},
+    # la barcaza de río y la del tramo marítimo no son el mismo equipo: lo marcó Alejandro Raúl García Arguijo en los comentarios
+    "fluvial": {"t": 1500.0, "km_dia": 300.0, "por_punto": 1, "color": "#3b8ed0", "nombre": "barcaza de río (50 camiones)"},
+    "maritimo": {"t": 15000.0, "km_dia": 400.0, "por_punto": 1, "color": "#3b8ed0", "nombre": "barcaza ATB de mar (500 camiones)"},
     "tren": {"t": 2000.0, "km_dia": 400.0, "por_punto": 1, "color": "#2e8b57", "nombre": "tren (2.000 t)"},
     "pulpa": {"t": 10000.0, "km_dia": 144.0, "por_punto": 1, "color": "#26c6da", "nombre": "pulpa en el arenoducto (10.000 t, a 6 km/h)"},
 }
@@ -76,16 +82,29 @@ def _osrm_path(cache: Path, tol: float = 0.003) -> list[tuple[float, float]]:
     return [(round(x, 4), round(y, 4)) for x, y in line.coords]
 
 
-def chain_paths(route_cache: Path, bb_cache: Path, chains: list[Chain] = CHAINS) -> list[dict]:
-    """Para cada cadena: sus tramos animables, con modo, traza y km."""
+def chain_paths(route_cache: Path, bb_cache: Path, chains: list[Chain] = CHAINS, extra_caches: dict[str, Path] | None = None) -> list[dict]:
+    """Para cada cadena: sus tramos animables, con modo, traza y km.
+
+    `extra_caches` acepta las respuestas de OSRM de las rutas que trajeron los comentarios
+    ("palmira", "allen", "dolavon"); sin ellas esas cadenas se dibujan con trazas aproximadas.
+    """
     ibicuy = _osrm_path(route_cache)
     bb = _osrm_path(bb_cache)
+    extra = extra_caches or {}
+
+    def ruta(clave: str, aproximada: list[tuple[float, float]]) -> list[tuple[float, float]]:
+        c = extra.get(clave)
+        return _osrm_path(c) if c and Path(c).exists() else aproximada
+
     # (modo, traza, corredor): el corredor nombra las rutas nacionales que ese tramo en camión carga; None si no toca la ruta larga
     by_name = {
         "camión directo, hoy": [("camion", ibicuy, "Ibicuy")],
         "barcaza a Bahía Blanca y camión": [("maritimo", AGUA_IBICUY_BB, None), ("camion", bb, "Bahía Blanca")],
         "barcaza, Tren Norpatagónico y camión": [("maritimo", AGUA_IBICUY_BB, None), ("tren", TREN_BB_ANELO, None), ("camion", CAMION_ULTIMA_MILLA, None)],
         "hidrovía patagónica por el río Negro": [("maritimo", AGUA_IBICUY_BB + AGUA_BB_VIEDMA[1:], None), ("fluvial", RIO_NEGRO_ARRIBA, None), ("camion", CAMION_ULTIMA_MILLA, None)],
+        "tren a Mendoza y camión": [("tren", TREN_SN_PALMIRA, None), ("camion", ruta("palmira", CAMION_PALMIRA_ANELO), None)],
+        "arena de Río Negro, desde Allen": [("camion", ruta("allen", CAMION_ALLEN_ANELO), None)],
+        "arena de Chubut, desde Dolavon": [("camion", ruta("dolavon", CAMION_DOLAVON_ANELO), None)],
         "arena cercana de Neuquén": [("camion", CAMION_CERCANA, None)],
         "arenoducto, hipotético": [("pulpa", ARENODUCTO_TRAZA, None), ("camion", CAMION_ULTIMA_MILLA, None)],
     }
@@ -282,7 +301,7 @@ C.forEach((c, i) => { const b = document.createElement("button"); b.textContent 
 { const b = document.createElement("button"); b.textContent = "todas a la vez"; b.onclick = () => pick(-1); chainsDiv.appendChild(b); }
 document.getElementById("legend").innerHTML = Object.values(U).filter((u, i, a) => a.findIndex(x => x.nombre === u.nombre) === i).map(u => `<span class="dot" style="background:${u.color}"></span>${u.nombre}${u.por_punto > 1 ? ", un punto = " + u.por_punto : ""}`).join(" · ") + ` · <span class="dot" style="background:#9aa5ad"></span>vuelve vacío`
   + `<br>Presión sobre la ruta, pasadas de arena contra todo el tránsito de 2017 del tramo: <span class="dot" style="background:#4caf50"></span>menos del 20 % · <span class="dot" style="background:#fee08b"></span>20 a 50 · <span class="dot" style="background:#fc8d59"></span>50 a 100 · <span class="dot" style="background:#d7301f"></span>la arena sola supera el tránsito de 2017`;
-document.getElementById("note").innerHTML = `Supuestos: ${fmt(S.t_por_camion)} t por camión, 2.400 t por barcaza, 2.000 t por tren, ${S.dias_operativos} días operativos. Costos por tonelada hasta el pozo: camión 97 (flete 70 y última milla 27, Infobae 8/2026); barcaza y camión 62,7; barcaza, tren y camión 35,2 (El Cronista 9/2026); hidrovía 48 (GlobalPorts 7/2026); arena cercana 30, calidad por confirmar. Arenoducto: no existe; 1.100 km por el corredor de la RN 5 y del gasoducto, 2.000 MUSD de capex (el costo por km de OCP en Marruecos) a 20 años sin interés más 0,02 USD/tkm, media tonelada de agua por tonelada de arena; con el capex por km del gasoducto Perito Moreno serían 4.400 MUSD. Emisiones pozo a rueda: camión 137, tren 24, río 33, mar 6,6 gCO₂e/tkm (EU-27 2018); la pulpa toma el factor del tren como cota. Toda la arena nacional se supone por la cadena elegida.`;
+document.getElementById("note").innerHTML = `Supuestos: ${fmt(S.t_por_camion)} t por camión, 1.500 t por barcaza de río y 15.000 por barcaza ATB de mar, 2.000 t por tren, ${S.dias_operativos} días operativos. Tres cadenas salieron de los comentarios del post del 17/9/2026: el tren a Palmira y camión a Neuquén, como el acuerdo de YPF con Trenes Argentinos Cargas de 2021 (Matías Derlich); la arena de Río Negro desde Allen y la de Chubut desde Dolavon; y la distinción entre barcaza de río y barcaza de mar (Alejandro Raúl García Arguijo). Costos por tonelada hasta el pozo: camión 97 (flete 70 y última milla 27, Infobae 8/2026); barcaza y camión 62,7; barcaza, tren y camión 35,2 (El Cronista 9/2026); hidrovía 48 (GlobalPorts 7/2026); arena cercana 30, calidad por confirmar. Arenoducto: no existe; 1.100 km por el corredor de la RN 5 y del gasoducto, 2.000 MUSD de capex (el costo por km de OCP en Marruecos) a 20 años sin interés más 0,02 USD/tkm, media tonelada de agua por tonelada de arena; con el capex por km del gasoducto Perito Moreno serían 4.400 MUSD. Emisiones pozo a rueda: camión 137, tren 24, río 33, mar 6,6 gCO₂e/tkm (EU-27 2018); la pulpa toma el factor del tren como cota. Toda la arena nacional se supone por la cadena elegida.`;
 const slider = document.getElementById("slider"); slider.max = Y.length - 1;
 let idx = 0, ci = Math.max(-1, Math.min(C.length - 1, parseInt(Q.get("chain") || "0"))), playing = true, last = performance.now(), yearClock = 0, ended = false;
 const YEAR_SECONDS = Math.max(0.5, parseFloat(Q.get("ys") || "4"));
@@ -297,10 +316,11 @@ function show(i, keep){
   const pr = paintTramos(ci, y);
   const cmp = document.getElementById("cmp"), single = document.getElementById("single");
   if (ci < 0) {
-    document.getElementById("estado").innerHTML = `<b>Las ${C.length === 6 ? "seis" : C.length} cadenas a la vez</b>, cada una con sus unidades. La tabla compara el mismo año por cada camino; la ruta se pinta con la presión del camión directo, la de hoy. El arenoducto reparte su capex en lo bombeado cada año: en los años de poca arena sale carísimo.`;
+    document.getElementById("estado").innerHTML = `<b>Las ${({6: "seis", 7: "siete", 8: "ocho", 9: "nueve"})[C.length] || C.length} cadenas a la vez</b>, cada una con sus unidades. La tabla compara el mismo año por cada camino; la ruta se pinta con la presión del camión directo, la de hoy. El arenoducto reparte su capex en lo bombeado cada año: en los años de poca arena sale carísimo.`;
     single.style.display = "none"; cmp.style.display = "block";
     let h = "<tr><th>cadena</th><th>MUSD</th><th>unidades</th><th>pasadas/día</th><th>kt CO₂e</th></tr>";
-    C.forEach((c, k) => { const r = unitsForChain(k, y); const largo = c.paths.some(p => p.modo === "camion" && p.corredor); const pas = largo ? 2 * (y.nat_t / U.camion.t) / S.dias_operativos : 0;
+    // pasadas de larga distancia: cualquier tramo en camión de más de 200 km, tenga o no tránsito medido (Mendoza y Chubut van por rutas que este modelo no midió)
+    C.forEach((c, k) => { const r = unitsForChain(k, y); const largo = c.paths.some(p => p.modo === "camion" && p.km >= 200); const pas = largo ? 2 * (y.nat_t / U.camion.t) / S.dias_operativos : 0;
       h += `<tr><td>${c.nombre}</td><td class="v">${fmt(y.nat_t * usdT(c, y.nat_t) / 1e6, 1)}</td><td class="v">${fmt(r.total)}</td><td class="v">${fmt(pas)}</td><td class="v">${fmt(y.nat_t * c.kg_co2e_t / 1e6, 1)}</td></tr>`; });
     cmp.innerHTML = h;
   } else {

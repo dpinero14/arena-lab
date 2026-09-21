@@ -85,6 +85,28 @@ ARENODUCTO = {
 }
 EMISIONES_G_TKM["pulpa"] = EMISIONES_G_TKM["tren"]   # bombeo eléctrico sin factor publicado: se toma el del tren como cota, declarado
 
+# Equipos del tramo por agua. La distinción la marcó Alejandro Raúl García Arguijo, profesor de la
+# Universidad de la Marina Mercante, en los comentarios del post del 17/9/2026: las barcazas de
+# hidrovía son para ríos interiores; el tramo marítimo va con convoy de empuje o barcaza ATB.
+BARCAZA = {
+    "fluvial_t": 1500.0,      # barcaza de río tipo Mississippi, a granel
+    "atb_t": 15000.0,         # barcaza ATB (articulated tug barge), 15.000 a 20.000 t; el convoy de empuje está definido en el REGINAVE
+    "fuente": "Alejandro Raúl García Arguijo, en comentarios; Alberto Gianola Otamendi, Boletín del Centro Naval 851 (2019), para la barcaza de río con empujador",
+}
+
+# Rutas que aparecieron en los comentarios del post del 17/9/2026. Los km son de OSRM sobre
+# OpenStreetMap, salvo el tramo ferroviario, aproximado por la distancia carretera.
+TREN_MENDOZA = {
+    "km_tren": 900.0,         # San Nicolás a Palmira por la línea San Martín, aproximado por ruta: la vía es más larga
+    "km_camion": 748.0,       # Palmira a Añelo
+    "capacidad_t_mes": 10000.0,
+    "fuente": "acuerdo YPF y Trenes Argentinos Cargas, agosto de 2021 (Diario Río Negro); lo trajo Matías Derlich en comentarios",
+}
+ARENA_RIO_NEGRO = {"km_camion": 120.0, "capacidad_mt": 0.8,
+                   "fuente": "canteras de Allen; producción 2025 de 1,5 Mt con caída del 42,6 % y proyección de ~0,8 Mt para 2026 (Diario Río Negro, 6/9/2026)"}
+ARENA_CHUBUT = {"km_camion": 855.0,
+                "fuente": "Dolavon, Chubut; sin producción publicada por año"}
+
 
 CHAINS: list[Chain] = [
     Chain("camión directo, hoy", [Leg("camion", 1461)], 70.0 + ULTIMA_MILLA_USD_T,
@@ -99,6 +121,20 @@ CHAINS: list[Chain] = [
     Chain("hidrovía patagónica por el río Negro", [Leg("fluvial", 250), Leg("maritimo", 1330), Leg("fluvial", 720), Leg("camion", 50)], 48.0,
           "en estudio: dos informes técnicos, el tercero con inversiones pendiente", "GlobalPorts 15/7/2026",
           "dragado, terminales, reforma del cabotaje; el puerto de San Antonio queda a 180 km del río"),
+    Chain("tren a Mendoza y camión", [Leg("tren", TREN_MENDOZA["km_tren"]), Leg("camion", TREN_MENDOZA["km_camion"])],
+          TREN_MENDOZA["km_tren"] * MODES["tren"]["usd_tkm"] + TREN_MENDOZA["km_camion"] * MODES["camion"]["usd_tkm"] + ULTIMA_MILLA_USD_T,
+          "existió: YPF y Trenes Argentinos Cargas, 10.000 t por mes desde agosto de 2021; sin datos públicos de hoy", TREN_MENDOZA["fuente"],
+          "los km de vía son los de la ruta, la traza ferroviaria es más larga; 748 km siguen en camión por rutas que este modelo no mide",
+          capacidad_mt=TREN_MENDOZA["capacidad_t_mes"] * 12 / 1e6),
+    Chain("arena de Río Negro, desde Allen", [Leg("camion", ARENA_RIO_NEGRO["km_camion"])],
+          ARENA_RIO_NEGRO["km_camion"] * MODES["camion"]["usd_tkm"] + ULTIMA_MILLA_USD_T,
+          "existe y se recupera: 1,5 Mt en 2025 tras caer 42,6 %; ~110.000 t en agosto de 2026", ARENA_RIO_NEGRO["fuente"],
+          "las operadoras se volcaron a Entre Ríos por calidad; el costo de acá no incluye esa diferencia en el pozo",
+          capacidad_mt=ARENA_RIO_NEGRO["capacidad_mt"]),
+    Chain("arena de Chubut, desde Dolavon", [Leg("camion", ARENA_CHUBUT["km_camion"])],
+          ARENA_CHUBUT["km_camion"] * MODES["camion"]["usd_tkm"] + ULTIMA_MILLA_USD_T,
+          "existe, chica: Arenas Patagónicas fue pionera", ARENA_CHUBUT["fuente"],
+          "sin volumen publicado por año; 855 km de camión por rutas patagónicas que este modelo no mide"),
     Chain("arena cercana de Neuquén", [Leg("camion", 60)], 60 * MODES["camion"]["usd_tkm"] + ULTIMA_MILLA_USD_T,
           "en prueba: <20.000 t por mes, YPF y Vista", "Vaca Muerta News 2/5/2026; Mejor Energía 8/9/2026",
           "calidad por confirmar en pozo; volumen chico; sin ensayos públicos", capacidad_mt=0.24),
@@ -157,4 +193,5 @@ BENCHMARKS = pd.DataFrame([
     {"pais": "Argentina, hoy", "arena": "Ibicuy, Entre Ríos", "distancia_km": 1461, "modo": "camión", "logistica_pct": "más del 70 %", "que_cambio": "la arena cercana perdió por calidad; el tren no llega y el río está en estudio", "fuente": "Infobae 8/2026; este repo"},
 ])
 
-__all__ = ["EMISIONES_G_TKM", "MODES", "ULTIMA_MILLA_USD_T", "INVERSION_TREN_MUSD", "REFERENCIA_MT", "ARENODUCTO", "Leg", "Chain", "CHAINS", "chains_table", "scenarios", "BENCHMARKS"]
+__all__ = ["EMISIONES_G_TKM", "MODES", "ULTIMA_MILLA_USD_T", "INVERSION_TREN_MUSD", "REFERENCIA_MT", "ARENODUCTO", "BARCAZA",
+           "TREN_MENDOZA", "ARENA_RIO_NEGRO", "ARENA_CHUBUT", "Leg", "Chain", "CHAINS", "chains_table", "scenarios", "BENCHMARKS"]
