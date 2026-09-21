@@ -33,6 +33,7 @@ desgaste y las emisiones: <https://dpinero14.github.io/arena-lab/laboratorio_are
 | `01_donde_buscar_arena` | Baja y clasifica 21.546 polígonos del mapa geológico en cinco clases de blanco. Calcula un puntaje de 0 a 100 por polígono con la geología, la distancia al centro de la demanda, a la red vial y a los depósitos de arena conocidos. Lista los mejores blancos. Controla el puntaje en siete lugares con arena conocida. Traza la ruta real de los camiones de Ibicuy a Añelo y mide qué blancos quedan al costado. Dibuja el mapa. |
 | `02_la_logistica_de_la_arena` | Mide la cadena de hoy año a año: viajes, camiones, flete y dólares por kilómetro. Compara nueve cadenas con las mismas reglas, un arenoducto hipotético incluido: costo por tonelada, kilómetros en camión y emisiones. Corre escenarios de 5, 8 y 15 millones de toneladas con ahorro y repago del tren. Compara con Estados Unidos, Canadá y Rusia. Genera la ruta animada con capas y selector de cadena. |
 | `03_la_ruta_paga_el_pozo` | Parte la ruta en tramos con el tránsito medio diario de 2017 de IDE Transporte y cuenta, año a año, las pasadas de camiones de arena contra todo el tránsito que cada tramo tenía. Convierte pasadas en desgaste con la ley de la cuarta potencia. Mide cada cadena en camiones que dejan de pasar. Genera el laboratorio con perillas. |
+| `04_la_cadena_que_no_se_corta` | Simula el tiempo de entrega de cada cadena con la variabilidad real del camión y una demora con cola derecha por transbordo. Calcula el stock de seguridad y el de ciclo que hacen falta para no frenar una fractura con 95, 98 y 99 % de probabilidad, lo que cuesta ese stock y lo que costaría el equipo parado. Rehace el ranking con el servicio adentro. |
 
 Las reglas y los pesos están en `src/alab/targets.py` y `src/alab/score.py`,
 en un solo lugar cada uno, para que se puedan leer y discutir. Todo está
@@ -271,6 +272,7 @@ src/alab/
   logistics.py   cadenas alternativas: tramos, costos por tonelada, capex repartido en el volumen, emisiones, escenarios y benchmarks
   animation2.py  la ruta animada v2: capas, selector de cadena, contexto por año, presión por tramo y cierre
   roads.py       la ruta por tramos: tránsito 2017, pasadas de arena por día, cuarta potencia
+  service.py     tiempos simulados, stock de seguridad y de ciclo, nivel de servicio y ranking con servicio
   lab.py         el laboratorio con perillas: demanda, carga por camión y reparto por cadena
   maps.py        mapa interactivo (folium) y figuras
 notebooks/       01_donde_buscar_arena, 02_la_logistica_de_la_arena, 03_la_ruta_paga_el_pozo
@@ -278,6 +280,50 @@ tests/           pytest con polígonos y tramos sintéticos
 docs/            mapa_arena.html, ruta_animada.html, laboratorio_arena.html y figuras
 data/raw/        vacío y en .gitignore; ver data/README.md
 ```
+
+## La cadena que no se corta
+
+El costo por tonelada no decide solo. Lo planteó Carlos Scanio en los
+comentarios: cada transbordo suma manipuleo, espera y stock de seguridad, y
+una fractura que se queda sin arena frena la operación completa. El notebook
+04 lo modela con sus reglas: nivel de servicio como probabilidad de no faltar
+en la campaña, demanda por campaña y no por promedio diario, y variabilidad
+calibrada con las 70 a 75 horas reales del camión.
+
+| Cadena | Días de entrega, mediana | Desvío, días | Stock para el 99 % | Días de consumo |
+|---|---|---|---|---|
+| Arena cercana de Neuquén | 0,1 | 0,03 | 164 t | 0,1 |
+| Arena de Río Negro, desde Allen | 0,2 | 0,06 | 314 t | 0,2 |
+| Arena de Chubut, desde Dolavon | 1,8 | 0,46 | 2.144 t | 1,1 |
+| Camión directo, hoy | 3,0 | 0,78 | 3.652 t | 1,8 |
+| Tren a Mendoza y camión | 4,4 | 0,66 | 4.078 t | 2,0 |
+| Barcaza a Bahía Blanca y camión | 5,9 | 0,78 | 11.106 t | 5,6 |
+| Barcaza, Tren Norpatagónico y camión | 6,9 | 0,84 | 11.399 t | 5,7 |
+| Hidrovía patagónica por el río Negro | 8,5 | 0,94 | 11.866 t | 5,9 |
+
+![Stock por cadena](docs/figures/stock_servicio.png)
+
+**El ranking no cambia, y la razón es que la arena es barata.** Tener el stock
+que hace falta cuesta entre 1 y 65 centavos por tonelada, y las paradas
+esperadas, entre 5 y 25 centavos, contra diferencias de flete de decenas de
+dólares. Con un insumo caro por tonelada, el mismo modelo daría otra cosa.
+
+**Lo que sí cambia es cuánta arena hay que tener parada.** Las cadenas por
+agua necesitan unas 11.000 toneladas entre stock de seguridad y stock de
+ciclo, tres veces el camión directo, porque lo que llega junto es una barcaza
+de 15.000 toneladas y no una camionada de 30. Eso son silos, playas de acopio
+y movimiento: no aparece en ningún dólar por tonelada de flete, pero hay que
+construirlo antes de que la cadena funcione.
+
+**Y conviene subir el nivel de servicio, no bajarlo.** Pasar de 95 a 99 %
+suma centavos de stock y ahorra más en paradas evitadas: el costo total baja
+en todas las cadenas. Es la asimetría que marcó Carlos, medida: un día de
+flota de fractura parada, con los supuestos declarados, equivale a 6.800
+toneladas de arena en cantera.
+
+Los supuestos que faltan confirmar con operación real están declarados en
+`src/alab/service.py`: consumo de campaña, costo del día parado y duración de
+una parada.
 
 ## Lo que me corrigieron
 

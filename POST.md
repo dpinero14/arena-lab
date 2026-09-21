@@ -134,6 +134,18 @@ código a la vista.
     a 0,6 mm hay que sostener de 3 a 5 m/s para que la pulpa no sedimente: la
     misma conclusión a la que el costo llegaba por otro lado.
 
+18. **La confiabilidad no da vuelta el ranking, pero cambia dónde va la plata.**
+    Con los tiempos simulados, las cadenas por agua necesitan unas 11.000
+    toneladas de arena parada entre stock de seguridad y de ciclo, tres veces
+    el camión directo, porque lo que llega junto es una barcaza de 15.000
+    toneladas y no una camionada de 30. El costo de ese stock es de centavos
+    por tonelada: el orden de las cadenas no se mueve porque la arena es
+    barata.
+19. **Conviene subir el nivel de servicio, no bajarlo.** De 95 a 99 % el costo
+    total baja en todas las cadenas: el stock extra cuesta menos que las
+    paradas que evita. Un día de flota de fractura parada equivale a 6.800
+    toneladas de arena en cantera.
+
 ## Ángulos posibles
 
 - El hueco del mapa: el Estado explora arena en una zona que su propio

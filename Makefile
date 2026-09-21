@@ -23,6 +23,7 @@ notebooks:
 	$(BIN)/python -m jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.kernel_name=arena-lab --ExecutePreprocessor.timeout=3600 notebooks/01_donde_buscar_arena.ipynb
 	$(BIN)/python -m jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.kernel_name=arena-lab --ExecutePreprocessor.timeout=3600 notebooks/02_la_logistica_de_la_arena.ipynb
 	$(BIN)/python -m jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.kernel_name=arena-lab --ExecutePreprocessor.timeout=3600 notebooks/03_la_ruta_paga_el_pozo.ipynb
+	$(BIN)/python -m jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.kernel_name=arena-lab --ExecutePreprocessor.timeout=3600 notebooks/04_la_cadena_que_no_se_corta.ipynb
 
 clean:
 	rm -rf data/processed/*.parquet
