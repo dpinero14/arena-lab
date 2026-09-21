@@ -19,7 +19,7 @@ rutas y las áreas donde se bombea: <https://dpinero14.github.io/arena-lab/mapa_
 
 Y la ruta de la arena animada, año a año desde 2012: los camiones aparecen
 sobre la traza en proporción a la arena bombeada, con el flete del año, las
-cinco cadenas alternativas y cada tramo de ruta pintado según cuánto pesa la
+ocho cadenas alternativas y cada tramo de ruta pintado según cuánto pesa la
 arena en su tránsito: <https://dpinero14.github.io/arena-lab/ruta_animada.html>
 
 Y el laboratorio, para mover la demanda, la carga por camión y el reparto por
@@ -31,7 +31,7 @@ desgaste y las emisiones: <https://dpinero14.github.io/arena-lab/laboratorio_are
 | Notebook | Qué hace |
 |---|---|
 | `01_donde_buscar_arena` | Baja y clasifica 21.546 polígonos del mapa geológico en cinco clases de blanco. Calcula un puntaje de 0 a 100 por polígono con la geología, la distancia al centro de la demanda, a la red vial y a los depósitos de arena conocidos. Lista los mejores blancos. Controla el puntaje en siete lugares con arena conocida. Traza la ruta real de los camiones de Ibicuy a Añelo y mide qué blancos quedan al costado. Dibuja el mapa. |
-| `02_la_logistica_de_la_arena` | Mide la cadena de hoy año a año: viajes, camiones, flete y dólares por kilómetro. Compara seis cadenas con las mismas reglas, un arenoducto hipotético incluido: costo por tonelada, kilómetros en camión y emisiones. Corre escenarios de 5, 8 y 15 millones de toneladas con ahorro y repago del tren. Compara con Estados Unidos, Canadá y Rusia. Genera la ruta animada con capas y selector de cadena. |
+| `02_la_logistica_de_la_arena` | Mide la cadena de hoy año a año: viajes, camiones, flete y dólares por kilómetro. Compara nueve cadenas con las mismas reglas, un arenoducto hipotético incluido: costo por tonelada, kilómetros en camión y emisiones. Corre escenarios de 5, 8 y 15 millones de toneladas con ahorro y repago del tren. Compara con Estados Unidos, Canadá y Rusia. Genera la ruta animada con capas y selector de cadena. |
 | `03_la_ruta_paga_el_pozo` | Parte la ruta en tramos con el tránsito medio diario de 2017 de IDE Transporte y cuenta, año a año, las pasadas de camiones de arena contra todo el tránsito que cada tramo tenía. Convierte pasadas en desgaste con la ley de la cuarta potencia. Mide cada cadena en camiones que dejan de pasar. Genera el laboratorio con perillas. |
 
 Las reglas y los pesos están en `src/alab/targets.py` y `src/alab/score.py`,
