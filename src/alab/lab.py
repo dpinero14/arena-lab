@@ -23,7 +23,9 @@ from .roads import AUTOS_POR_PASADA
 # Corredor de rutas nacionales que carga el tramo largo en camión de cada cadena; las demás no tocan la ruta larga.
 CORREDOR = {"camión directo, hoy": "Ibicuy", "barcaza a Bahía Blanca y camión": "Bahía Blanca"}
 
-# Cargas por camión que se pueden elegir: lo que se ve hoy y lo que permite la ley. Diario Neuquino 11/9/2026 (26 a 53 t, máximo 55 t brutas); Río Negro 30/7/2026 (bitrenes de 75 t).
+# Cargas por camión que se pueden elegir: lo que se ve hoy y lo que permite la ley. Diario Neuquino 11/9/2026 (26 a 53 t, máximo 55 t brutas);
+# Río Negro 30/7/2026 (bitrenes de 75 t). El Decreto 689/2026 (BO 31/7/2026) fija los bitrenes B2 y B3 en 75 t brutas con 500 kg de
+# tolerancia; lo señaló Luis Alberto Troncoso en los comentarios del post del 17/9/2026.
 CARGAS = [
     {"t": 30, "nombre": "30 t, lo que carga hoy un semirremolque según los choferes"},
     {"t": 40, "nombre": "40 t, un semirremolque al máximo legal de 55 t brutas"},
